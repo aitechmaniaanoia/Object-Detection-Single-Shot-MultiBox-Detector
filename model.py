@@ -36,7 +36,10 @@ def SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box):
     #and reshape box to [batch_size*num_of_boxes, 4].
     #Then you need to figure out how you can get the indices of all cells carrying objects,
     #and use confidence[indices], box[indices] to select those cells.
-
+    
+    
+    return err
+    
 
 
 
@@ -48,19 +51,19 @@ class SSD(nn.Module):
         self.class_num = class_num #num_of_classes, in this assignment, 4: cat, dog, person, background
         
         #TODO: define layers
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1, bias=True)
         
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1) # 2 times
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1)
+        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=True) # 2 times
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=True)
         
-        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1) # 2 times
-        self.conv5 = nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1)
+        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=True) # 2 times
+        self.conv5 = nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=True)
         
-        self.conv6 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1) # 2 times
-        self.conv7 = nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1)
+        self.conv6 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True) # 2 times
+        self.conv7 = nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1, bias=True)
         
-        self.conv8 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1) # 2 times
-        self.conv9 = nn.Conv2d(512, 256, kernel_size=3, stride=2, padding=1)
+        self.conv8 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, bias=True) # 2 times
+        self.conv9 = nn.Conv2d(512, 256, kernel_size=3, stride=2, padding=1, bias=True)
         
         self.bn64 = nn.BatchNorm2d(64)
         self.bn128 = nn.BatchNorm2d(128)
@@ -69,14 +72,14 @@ class SSD(nn.Module):
         
         ## second part: split two ways
         # left
-        self.conv_256_256_1_1 = nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=1)
-        self.conv_256_256_3_2 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1)
-        self.conv_256_256_3_1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
+        self.conv_256_256_1_1 = nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=1, bias=True)
+        self.conv_256_256_3_2 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=True)
+        self.conv_256_256_3_1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True)
         
-        self.conv_256_16_1_1 = nn.Conv2d(256, 16, kernel_size=1, stride=1, padding=1)
+        self.conv_256_16_1_1 = nn.Conv2d(256, 16, kernel_size=1, stride=1, padding=1, bias=True)
         
         # right
-        self.conv_256_16_3_1 = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1)
+        self.conv_256_16_3_1 = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1, bias=True)
         
         
     def forward(self, x):
@@ -161,8 +164,9 @@ class SSD(nn.Module):
         x_r_2 = np.reshape(x_r_2, (batch_size, 16, 9))
         
         # concatenate
-        bboxes = np.concatenate(x_l_final, x_r, x_r_1, x_r_2), axis = 2)
-        boxes = np.reshape(bboxes, ((batch_size, 540, 4)))
+        bboxes = np.concatenate((x_l_final, x_r, x_r_1, x_r_2), axis = 2)
+        bboxes = np.swapaxes(bboxes, 1, 2)
+        bboxes = np.reshape(bboxes, ((batch_size, 540, 4)))
         
         # confidence (box + softmax)
         confidence = F.softmax(bboxes)

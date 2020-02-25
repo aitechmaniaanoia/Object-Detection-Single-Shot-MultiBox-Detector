@@ -32,6 +32,22 @@ def default_box_generator(layers, large_scale, small_scale):
     #for a cell in layer[i], you should use ssize=small_scale[i] and lsize=large_scale[i].
     #the last dimension 8 means each default bounding box has 8 attributes: [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
     
+    cell_num = 10*10+5*5+3*3+1*1
+    box_num = 4*cell_num
+    
+    boxes = np.zeros((cell_num, 4, 8)) # [number o cells, default bounding boxes in each cell, attributes in each bounding box]
+    # 4: [ssize,ssize], [lsize,lsize], [lsize*sqrt(2),lsize/sqrt(2)], [lsize/sqrt(2),lsize*sqrt(2)]
+    # 8: [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
+    
+    for i in range(len(layers)):
+        ssize = small_scale[i]
+        lsize = large_scale[i]
+    
+    
+    
+    # reshape boxes to [box_num, 8]
+    # todo
+    
     return boxes
 
 
