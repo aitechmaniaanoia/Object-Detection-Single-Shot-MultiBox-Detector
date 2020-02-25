@@ -48,6 +48,35 @@ class SSD(nn.Module):
         self.class_num = class_num #num_of_classes, in this assignment, 4: cat, dog, person, background
         
         #TODO: define layers
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1)
+        
+        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1) # 2 times
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1)
+        
+        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1) # 2 times
+        self.conv5 = nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1)
+        
+        self.conv6 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1) # 2 times
+        self.conv7 = nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1)
+        
+        self.conv8 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1) # 2 times
+        self.conv9 = nn.Conv2d(512, 256, kernel_size=3, stride=2, padding=1)
+        
+        self.bn64 = nn.BatchNorm2d(64)
+        self.bn128 = nn.BatchNorm2d(128)
+        self.bn256 = nn.BatchNorm2d(256)
+        self.bn512 = nn.BatchNorm2d(512)
+        
+        ## second part: split two ways
+        # left
+        self.conv_256_256_1_1 = nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=1)
+        self.conv_256_256_3_2 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1)
+        self.conv_256_256_3_1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
+        
+        self.conv_256_16_1_1 = nn.Conv2d(256, 16, kernel_size=1, stride=1, padding=1)
+        
+        # right
+        self.conv_256_16_3_1 = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1)
         
         
     def forward(self, x):
@@ -63,6 +92,80 @@ class SSD(nn.Module):
         #sanity check: print the size/shape of the confidence and bboxes, make sure they are as follows:
         #confidence - [batch_size,4*(10*10+5*5+3*3+1*1),num_of_classes]
         #bboxes - [batch_size,4*(10*10+5*5+3*3+1*1),4]
+        batch_size = len(x)
+        
+        x = self.conv1(x)
+        x = F.relu(self.bn64(x))
+        
+        x = self.conv2(x)
+        x = F.relu(self.bn64(x))
+        x = self.conv2(x)
+        x = F.relu(self.bn64(x))
+        
+        x = self.conv3(x)
+        x = F.relu(self.bn128(x))
+        
+        x = self.conv4(x)
+        x = F.relu(self.bn128(x))
+        x = self.conv4(x)
+        x = F.relu(self.bn128(x))
+        
+        x = self.conv5(x)
+        x = F.relu(self.bn256(x))
+        
+        x = self.conv6(x)
+        x = F.relu(self.bn256(x))
+        x = self.conv6(x)
+        x = F.relu(self.bn256(x))
+        
+        x = self.conv7(x)
+        x = F.relu(self.bn512(x))
+        
+        x = self.conv8(x)
+        x = F.relu(self.bn512(x))
+        x = self.conv8(x)
+        x = F.relu(self.bn512(x))
+        
+        x = self.conv9(x)
+        x = F.relu(self.bn256(x))
+        
+        #second part
+        # left 
+        x_l = self.conv_256_256_1_1(x)
+        x_l = F.relu(self.bn256(x_l))
+        x_l = self.conv_256_256_3_2(x_l)
+        x_l = F.relu(self.bn256(x_l))
+        
+        x_l_1 = self.conv_256_256_1_1(x_l)      
+        x_l_1 = F.relu(self.bn256(x_l_1))
+        x_l_1 = self.conv_256_256_3_1(x_l_1)
+        x_l_1 = F.relu(self.bn256(x_l_1))
+        
+        x_l_2 = self.conv_256_256_1_1(x_l_1)
+        x_l_2 = F.relu(self.bn256(x_l_2))
+        x_l_2 = self.conv_256_256_3_1(x_l_2)
+        x_l_2 = F.relu(self.bn256(x_l_2))
+        
+        x_l_final = self.conv_256_16_1_1(x_l_2)
+        # x_l_final reshape for box, confidence
+        x_l_final = np.reshape(x_l_final, (batch_size, 16, 1))
+        
+        # right 
+        x_r = self.conv_256_16_3_1(x)
+        x_r = np.reshape(x_r, (batch_size, 16, 100))
+        
+        x_r_1 = self.conv_256_16_3_1(x_l)
+        x_r_1 = np.reshape(x_r_1, (batch_size, 16, 25))
+        
+        x_r_2 = self.conv_256_16_3_1(x_l_1)
+        x_r_2 = np.reshape(x_r_2, (batch_size, 16, 9))
+        
+        # concatenate
+        bboxes = np.concatenate(x_l_final, x_r, x_r_1, x_r_2), axis = 2)
+        boxes = np.reshape(bboxes, ((batch_size, 540, 4)))
+        
+        # confidence (box + softmax)
+        confidence = F.softmax(bboxes)
         
         return confidence,bboxes
 
