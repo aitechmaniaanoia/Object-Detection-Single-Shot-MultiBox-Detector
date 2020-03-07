@@ -37,10 +37,30 @@ def SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box):
     #Then you need to figure out how you can get the indices of all cells carrying objects,
     #and use confidence[indices], box[indices] to select those cells.
     
+    batch_size = pred_confidence.shape[0]
+    num_boxes = pred_confidence.shape[1]
+    num_classes = pred_confidence.shape[2]
+    
+    # reshape
+    pred_confidence = pred_confidence.reshape((batch_size*num_boxes, num_classes))
+    ann_confidene = ann_confidence.reshape((batch_size*num_boxes, num_classes))
+    
+    pred_box = pred_box.reshape((batch_size*num_boxes, 4))
+    ann_box = ann_box.reshape((batch_size*num_boxes, 4))
+    
+    # before_reshape[i,j,k] = after_reshape[i*num_boxes+j,k]
+    
+    # confidence
+    # aaaaaaaaaaaaaaaaaaaaaaaaa FUCK    
+    err_confidence = F.binary_cross_entropy(pred_confidence, ann_confidence) + 3*F.binary_cross_entropy()
+    
+    # box
+    err_box = F.smooth_l1_loss(pred_box, ann_box)
+    
+    err = err_confidence + err_box
     
     return err
     
-
 
 
 class SSD(nn.Module):

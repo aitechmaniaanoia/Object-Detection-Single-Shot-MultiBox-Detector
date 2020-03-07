@@ -43,17 +43,18 @@ def default_box_generator(layers, large_scale, small_scale):
         ssize = small_scale[i]
         lsize = large_scale[i]
         
-        for j in range(4):
-            x_center = 
-            y_center = 
-            box_width = 
-            box_height = 
-            x_min = 
-            y_min = 
-            x_max = 
-            y_max = 
-            
-            boxes[i,j,:] = [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
+        aa = [[ssize,ssize], [lsize,lsize], [lsize*np.sqrt(2),lsize/np.sqrt(2)], [lsize/np.sqrt(2),lsize*np.sqrt(2)]]
+        
+        # x_center = 
+        # y_center = 
+        # box_width = 
+        # box_height = 
+        # x_min = 
+        # y_min = 
+        # x_max = 
+        # y_max = 
+        
+        boxes[i,j,:] = [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
     
     
     # reshape boxes to [box_num, 8]
@@ -99,11 +100,14 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     #update ann_box and ann_confidence, with respect to the ious and the default bounding boxes.
     #if a default bounding box and the ground truth bounding box have iou>threshold, then we will say this default bounding box is carrying an object.
     #this default bounding box will be used to update the corresponding entry in ann_box and ann_confidence
+    aaaaaaaaa = iou(boxs_default, x_min,y_min,x_max,y_max)
     
     ious_true = np.argmax(ious)
     #TODO:
     #make sure at least one default bounding box is used
     #update ann_box and ann_confidence (do the same thing as above)
+    
+    return ann_box, ann_confidence
 
 
 
@@ -147,7 +151,7 @@ class COCO(torch.utils.data.Dataset):
         #2. prepare ann_box and ann_confidence, by reading txt file "ann_name" first.
         #3. use the above function "match" to update ann_box and ann_confidence, for each bounding box in "ann_name".
         #4. Data augmentation. You need to implement random cropping first. You can try adding other augmentations to get better results.
-        
+
         #to use function "match":
         #match(ann_box,ann_confidence,self.boxs_default,self.threshold,class_id,x_min,y_min,x_max,y_max)
         #where [x_min,y_min,x_max,y_max] is from the ground truth bounding box, normalized with respect to the width or height of the image.
@@ -155,5 +159,16 @@ class COCO(torch.utils.data.Dataset):
         #note: please make sure x_min,y_min,x_max,y_max are normalized with respect to the width or height of the image.
         #For example, point (x=100, y=200) in a image with (width=1000, height=500) will be normalized to (x/width=0.1,y/height=0.4)
         
+        image = 0
+        
+        x_min = 0
+        y_min = 0
+        x_max = 0
+        y_max = 0
+        
+        ann_box, ann_confidence = match(ann_box,ann_confidence,
+                                        self.boxs_default,self.threshold,
+                                        self.class_id,
+                                        x_min,y_min,x_max,y_max)
         
         return image, ann_box, ann_confidence
