@@ -35,18 +35,30 @@ def default_box_generator(layers, large_scale, small_scale):
     cell_num = 10*10+5*5+3*3+1*1
     box_num = 4*cell_num
     
-    boxes = np.zeros((cell_num, 4, 8)) # [number o cells, default bounding boxes in each cell, attributes in each bounding box]
+    boxes = np.zeros((cell_num, 4, 8)) # [number of cells, default bounding boxes in each cell, attributes in each bounding box]
     # 4: [ssize,ssize], [lsize,lsize], [lsize*sqrt(2),lsize/sqrt(2)], [lsize/sqrt(2),lsize*sqrt(2)]
     # 8: [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
     
     for i in range(len(layers)):
         ssize = small_scale[i]
         lsize = large_scale[i]
-    
+        
+        for j in range(4):
+            x_center = 
+            y_center = 
+            box_width = 
+            box_height = 
+            x_min = 
+            y_min = 
+            x_max = 
+            y_max = 
+            
+            boxes[i,j,:] = [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
     
     
     # reshape boxes to [box_num, 8]
     # todo
+    boxes = reshape((box_num, 8))
     
     return boxes
 
