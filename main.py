@@ -27,15 +27,12 @@ args = parser.parse_args()
 #to train: python main.py
 #to test:  python main.py --test
 
-
 class_num = 4 #cat dog person background
 
 num_epochs = 100
 batch_size = 32
 
-
 boxs_default = default_box_generator([10,5,3,1], [0.2,0.4,0.6,0.8], [0.1,0.3,0.5,0.7])
-
 
 #Create network
 network = SSD(class_num)

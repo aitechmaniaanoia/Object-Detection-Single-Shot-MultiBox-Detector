@@ -9,6 +9,7 @@ import torchvision.utils as vutils
 from torch.autograd import Variable
 import torch.nn.functional as F
 import numpy as np
+import math
 import os
 import cv2
 
@@ -34,27 +35,29 @@ def default_box_generator(layers, large_scale, small_scale):
     
     cell_num = 10*10+5*5+3*3+1*1
     box_num = 4*cell_num
+    small_scale = np.array(small_scale)
+    large_scale = np.array(large_scale)
     
     boxes = np.zeros((cell_num, 4, 8)) # [number of cells, default bounding boxes in each cell, attributes in each bounding box]
     # 4: [ssize,ssize], [lsize,lsize], [lsize*sqrt(2),lsize/sqrt(2)], [lsize/sqrt(2),lsize*sqrt(2)]
     # 8: [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
-    grid_size_group = [10,5,3,1]
+    #grid_size_group = [10,5,3,1]
     
-    for grid_size in grid_size_group:
+    for grid_size in layers:
         
+        k = layers.index(grid_size)
         ## generate bounding boxes in each cell 
         for i in range(grid_size): 
             for j in range(grid_size):
                 
                 x_center = i/grid_size
                 y_center = j/grid_size
-            #for c in range(4): 
                 
-                box_width = [small_scale, large_scale, large_scale*np.sqrt(2), large_scale*np.sqrt(2)] # 4*4
-                box_height = [small_scale, large_scale, large_scale*np.sqrt(2), large_scale*np.sqrt(2)] # 4*4
+                box_width = np.array([small_scale[k], large_scale[k], large_scale[k]*np.sqrt(2), large_scale[k]*np.sqrt(2)]) # 4*1
+                box_height = np.array([small_scale[k], large_scale[k], large_scale[k]*np.sqrt(2), large_scale[k]*np.sqrt(2)]) # 4*1
                 
-                x_min = x_center - box_width/2 # 4*4
-                x_max = x_center + box_width/2 # 4*4
+                x_min = x_center - box_width/2 # 4*1
+                x_max = x_center + box_width/2 # 4*1
                 
                 y_min = y_center - box_height/2
                 y_max = y_center + box_height/2
@@ -67,20 +70,24 @@ def default_box_generator(layers, large_scale, small_scale):
                 y_max[y_max > grid_size] = grid_size
                 
                 # create center matrix
-                x_c = np.zeros((4,4))
-                y_c = np.zeros((4,4))
+                x_c = np.zeros((4))
+                y_c = np.zeros((4))
                 
-                x_c[:,:] = x_center
-                y_c[:,:] = y_center
+                x_c[:] = x_center
+                y_c[:] = y_center
                 
-                boxes[i*grid_size+j,:,:] = [x_c, y_c, box_width, box_height, x_min, y_min, x_max, y_max] # 4*4
-                #boxes[i*grid_size+j,1,:] = [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
-                #boxes[i*grid_size+j,2,:] = [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
-                #boxes[i*grid_size+j,3,:] = [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
-                
+                boxes[i*grid_size+j,:,0] = x_c
+                boxes[i*grid_size+j,:,1] = y_c
+                boxes[i*grid_size+j,:,2] = box_width
+                boxes[i*grid_size+j,:,3] = box_height
+                boxes[i*grid_size+j,:,4] = x_min
+                boxes[i*grid_size+j,:,5] = y_min
+                boxes[i*grid_size+j,:,6] = x_max
+                boxes[i*grid_size+j,:,7] = y_max
+
     # reshape boxes to [box_num, 8]
     # todo
-    boxes = np.reshape((box_num, 8))
+    boxes = boxes.reshape((box_num, 8))
     
     return boxes
 
@@ -115,29 +122,33 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     
     #compute iou between the default bounding boxes and the ground truth bounding box
     ious = iou(boxs_default, x_min,y_min,x_max,y_max)
-    
+    ious_true = np.argmax(ious)
     ious_true = ious>threshold
     #TODO:
     #update ann_box and ann_confidence, with respect to the ious and the default bounding boxes.
     #if a default bounding box and the ground truth bounding box have iou>threshold, then we will say this default bounding box is carrying an object.
     #this default bounding box will be used to update the corresponding entry in ann_box and ann_confidence
     
-    ious_true = np.argmax(ious)
-    
     # g - ann_box
-    g = ann_box[ious_true]
+    g = boxs_default[ious_true]
     
     relative_center_x = (g[:,0] - x_min)/x_max
     relative_center_y = (g[:,1] - y_min)/y_max
-    relative_width = log(g[:,2]/x_max)
-    relative_height = log(g[:,3]/y_max)
+    relative_width = np.log(g[:,2]/x_max)
+    relative_height = np.log(g[:,3]/y_max)
     
-    ann_box[ious_true,:] = [relative_center_x, relative_center_y, relative_width, relative_height] # [540,4]  
-    ann_confidence = # [540,4] one hot vectors
+    ann_box[ious_true,:] = np.array([relative_center_x, relative_center_y, 
+                                     relative_width, relative_height]).T # [540,4]  
+    ann_confidence[ious_true,cat_id] = 1 # [540,4] one hot vectors
+    ann_confidence[ious_true,-1] = 0
     
     #TODO:
     #make sure at least one default bounding box is used
     #update ann_box and ann_confidence (do the same thing as above)
+    
+    # CHENHAO TODO
+    
+    
     
     return ann_box, ann_confidence
 
@@ -160,6 +171,11 @@ class COCO(torch.utils.data.Dataset):
         
         #notice:
         #you can split the dataset into 80% training and 20% testing here, by slicing self.img_names with respect to self.train
+        
+        ## CHENHAO TODO
+
+
+
 
     def __len__(self):
         return len(self.img_names)
@@ -191,16 +207,43 @@ class COCO(torch.utils.data.Dataset):
         #note: please make sure x_min,y_min,x_max,y_max are normalized with respect to the width or height of the image.
         #For example, point (x=100, y=200) in a image with (width=1000, height=500) will be normalized to (x/width=0.1,y/height=0.4)
         
-        image = 0
+        image = cv2.imread(img_name)
         
-        x_min = 0
-        y_min = 0
-        x_max = 0
-        y_max = 0
+        width = image.shape[0]
+        height = image.shape[1]
+        # resize
+        image = cv2.resize(image, (320,320))
         
+        image = np.swapaxes(image,1,2) 
+        image = np.swapaxes(image,0,1) # [3,320,320]
+        
+        file_name = open(ann_name, "r")
+        line = file_name.readlines()
+        file_name.close()       
+        for ln in line[0:len(line)]:
+            line=ln.strip().split()
+        
+        class_id = int(line[0])
+        x_c = float(line[1]) 
+        y_c = float(line[2])
+        w = float(line[3]) 
+        h = float(line[4])
+        # from ground truth bounding box normalized
+        # clip into image
+        def clip(value):
+            if value > 1:
+                return 1
+            if value < 0:
+                return 0
+        
+        x_min = clip((x_c - w/2)/width)
+        y_min = clip((y_c - h/2)/height)
+        x_max = clip((x_c + w/2)/width)
+        y_max = clip((y_c + w/2)/height)
+         
         ann_box, ann_confidence = match(ann_box,ann_confidence,
                                         self.boxs_default,self.threshold,
-                                        self.class_id,
+                                        class_id,
                                         x_min,y_min,x_max,y_max)
         
         return image, ann_box, ann_confidence
