@@ -139,6 +139,7 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     
     ann_box[ious_true,:] = np.array([relative_center_x, relative_center_y, 
                                      relative_width, relative_height]).T # [540,4]  
+    
     ann_confidence[ious_true,cat_id] = 1 # [540,4] one hot vectors
     ann_confidence[ious_true,-1] = 0
     
@@ -148,7 +149,7 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     
     # CHENHAO TODO
     
-    
+    # ???
     
     return ann_box, ann_confidence
 
@@ -174,7 +175,7 @@ class COCO(torch.utils.data.Dataset):
         
         ## CHENHAO TODO
 
-
+        ## ???
 
 
     def __len__(self):
@@ -212,7 +213,7 @@ class COCO(torch.utils.data.Dataset):
         width = image.shape[0]
         height = image.shape[1]
         # resize
-        image = cv2.resize(image, (320,320))
+        image = cv2.resize(image, (self.image_size,self.image_size))
         
         image = np.swapaxes(image,1,2) 
         image = np.swapaxes(image,0,1) # [3,320,320]
@@ -232,9 +233,10 @@ class COCO(torch.utils.data.Dataset):
         # clip into image
         def clip(value):
             if value > 1:
-                return 1
+                value = 1
             if value < 0:
-                return 0
+                value = 0
+            return value
         
         x_min = clip((x_c - w/2)/width)
         y_min = clip((y_c - h/2)/height)

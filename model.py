@@ -93,10 +93,10 @@ class SSD(nn.Module):
         ## second part: split two ways
         # left
         self.conv_256_256_1_1 = nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=1, bias=True)
-        self.conv_256_256_3_2 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=True)
-        self.conv_256_256_3_1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True)
+        self.conv_256_256_3_2 = nn.Conv2d(256, 256, kernel_size=3, stride=2, bias=True)
+        self.conv_256_256_3_1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, bias=True) ## need to fix
         
-        self.conv_256_16_1_1 = nn.Conv2d(256, 16, kernel_size=1, stride=1, padding=1, bias=True)
+        self.conv_256_16_1_1 = nn.Conv2d(256, 16, kernel_size=1, stride=1, bias=True)
         
         # right
         self.conv_256_16_3_1 = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1, bias=True)
@@ -157,36 +157,37 @@ class SSD(nn.Module):
         x_l = self.conv_256_256_1_1(x)
         x_l = F.relu(self.bn256(x_l))
         x_l = self.conv_256_256_3_2(x_l)
-        x_l = F.relu(self.bn256(x_l))
+        x_l = F.relu(self.bn256(x_l)) # [N,256,5,5]
         
         x_l_1 = self.conv_256_256_1_1(x_l)      
         x_l_1 = F.relu(self.bn256(x_l_1))
-        x_l_1 = self.conv_256_256_3_1(x_l_1)
-        x_l_1 = F.relu(self.bn256(x_l_1))
+        x_l_1 = self.conv_256_256_3_1(x_l_1) 
+        x_l_1 = F.relu(self.bn256(x_l_1)) #[N,256,3,3]
         
         x_l_2 = self.conv_256_256_1_1(x_l_1)
         x_l_2 = F.relu(self.bn256(x_l_2))
         x_l_2 = self.conv_256_256_3_1(x_l_2)
-        x_l_2 = F.relu(self.bn256(x_l_2))
+        x_l_2 = F.relu(self.bn256(x_l_2)) #[N,256,1,1]
         
-        x_l_final = self.conv_256_16_1_1(x_l_2)
+        x_l_final = self.conv_256_16_1_1(x_l_2) # [N,16,1,1]
         # x_l_final reshape for box, confidence
-        x_l_final = np.reshape(x_l_final, (batch_size, 16, 1))
+        x_l_final = x_l_final.reshape((batch_size, 16, 1)) # [N,16,1]
         
         # right 
         x_r = self.conv_256_16_3_1(x)
-        x_r = np.reshape(x_r, (batch_size, 16, 100))
+        x_r = x_r.reshape((batch_size, 16, 100))
         
         x_r_1 = self.conv_256_16_3_1(x_l)
-        x_r_1 = np.reshape(x_r_1, (batch_size, 16, 25))
+        x_r_1 = x_r_1.reshape((batch_size, 16, 25))
         
         x_r_2 = self.conv_256_16_3_1(x_l_1)
-        x_r_2 = np.reshape(x_r_2, (batch_size, 16, 9))
+        x_r_2 = x_r_2.reshape((batch_size, 16, 9))
         
         # concatenate
-        bboxes = np.concatenate((x_l_final, x_r, x_r_1, x_r_2), axis = 2)
-        bboxes = np.swapaxes(bboxes, 1, 2)
-        bboxes = np.reshape(bboxes, ((batch_size, 540, 4)))
+        #bboxes = np.concatenate((x_l_final, x_r, x_r_1, x_r_2), axis = 2)
+        bboxes = torch.cat((x_l_final, x_r, x_r_1, x_r_2), axis = 2) 
+        bboxes = bboxes.permute(0, 2, 1)
+        bboxes = bboxes.reshape((batch_size, 540, 4))
         
         # confidence (box + softmax)
         confidence = F.softmax(bboxes)
