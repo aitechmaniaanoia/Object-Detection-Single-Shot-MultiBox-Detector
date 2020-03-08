@@ -88,6 +88,8 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, thresh
     
     
     #TODO: non maximum suppression
+    suppressed = []
+    hoghest_prob = box_[max(confidence_)]
 
 
 

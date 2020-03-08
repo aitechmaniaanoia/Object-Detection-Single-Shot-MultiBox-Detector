@@ -38,28 +38,49 @@ def default_box_generator(layers, large_scale, small_scale):
     boxes = np.zeros((cell_num, 4, 8)) # [number of cells, default bounding boxes in each cell, attributes in each bounding box]
     # 4: [ssize,ssize], [lsize,lsize], [lsize*sqrt(2),lsize/sqrt(2)], [lsize/sqrt(2),lsize*sqrt(2)]
     # 8: [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
+    grid_size_group = [10,5,3,1]
     
-    for i in range(len(layers)):
-        ssize = small_scale[i]
-        lsize = large_scale[i]
+    for grid_size in grid_size_group:
         
-        aa = [[ssize,ssize], [lsize,lsize], [lsize*np.sqrt(2),lsize/np.sqrt(2)], [lsize/np.sqrt(2),lsize*np.sqrt(2)]]
-        
-        # x_center = 
-        # y_center = 
-        # box_width = 
-        # box_height = 
-        # x_min = 
-        # y_min = 
-        # x_max = 
-        # y_max = 
-        
-        boxes[i,j,:] = [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
-    
-    
+        ## generate bounding boxes in each cell 
+        for i in range(grid_size): 
+            for j in range(grid_size):
+                
+                x_center = i/grid_size
+                y_center = j/grid_size
+            #for c in range(4): 
+                
+                box_width = [small_scale, large_scale, large_scale*np.sqrt(2), large_scale*np.sqrt(2)] # 4*4
+                box_height = [small_scale, large_scale, large_scale*np.sqrt(2), large_scale*np.sqrt(2)] # 4*4
+                
+                x_min = x_center - box_width/2 # 4*4
+                x_max = x_center + box_width/2 # 4*4
+                
+                y_min = y_center - box_height/2
+                y_max = y_center + box_height/2
+                
+                # clip boxes
+                x_min[x_min < 0] = 0
+                y_min[y_min < 0] = 0
+                
+                x_max[x_max > grid_size] = grid_size
+                y_max[y_max > grid_size] = grid_size
+                
+                # create center matrix
+                x_c = np.zeros((4,4))
+                y_c = np.zeros((4,4))
+                
+                x_c[:,:] = x_center
+                y_c[:,:] = y_center
+                
+                boxes[i*grid_size+j,:,:] = [x_c, y_c, box_width, box_height, x_min, y_min, x_max, y_max] # 4*4
+                #boxes[i*grid_size+j,1,:] = [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
+                #boxes[i*grid_size+j,2,:] = [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
+                #boxes[i*grid_size+j,3,:] = [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
+                
     # reshape boxes to [box_num, 8]
     # todo
-    boxes = reshape((box_num, 8))
+    boxes = np.reshape((box_num, 8))
     
     return boxes
 
@@ -100,9 +121,20 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     #update ann_box and ann_confidence, with respect to the ious and the default bounding boxes.
     #if a default bounding box and the ground truth bounding box have iou>threshold, then we will say this default bounding box is carrying an object.
     #this default bounding box will be used to update the corresponding entry in ann_box and ann_confidence
-    aaaaaaaaa = iou(boxs_default, x_min,y_min,x_max,y_max)
     
     ious_true = np.argmax(ious)
+    
+    # g - ann_box
+    g = ann_box[ious_true]
+    
+    relative_center_x = (g[:,0] - x_min)/x_max
+    relative_center_y = (g[:,1] - y_min)/y_max
+    relative_width = log(g[:,2]/x_max)
+    relative_height = log(g[:,3]/y_max)
+    
+    ann_box[ious_true,:] = [relative_center_x, relative_center_y, relative_width, relative_height] # [540,4]  
+    ann_confidence = # [540,4] one hot vectors
+    
     #TODO:
     #make sure at least one default bounding box is used
     #update ann_box and ann_confidence (do the same thing as above)

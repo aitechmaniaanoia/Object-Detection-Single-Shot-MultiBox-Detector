@@ -43,7 +43,7 @@ def SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box):
     
     # reshape
     pred_confidence = pred_confidence.reshape((batch_size*num_boxes, num_classes))
-    ann_confidene = ann_confidence.reshape((batch_size*num_boxes, num_classes))
+    ann_confidence = ann_confidence.reshape((batch_size*num_boxes, num_classes))
     
     pred_box = pred_box.reshape((batch_size*num_boxes, 4))
     ann_box = ann_box.reshape((batch_size*num_boxes, 4))

@@ -44,8 +44,8 @@ cudnn.benchmark = True
 
 
 if not args.test:
-    dataset = COCO("data/train/images/", "data/train/annotations/", class_num, train = True, image_size=320)
-    dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, train = False, image_size=320)
+    dataset = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = True, image_size=320)
+    dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
     
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=True, num_workers=0)
@@ -122,7 +122,7 @@ if not args.test:
 
 else:
     #TEST
-    dataset_test = COCO("data/test/images/", "data/test/annotations/", class_num, train = False, image_size=320)
+    dataset_test = COCO("data/test/images/", "data/test/annotations/", class_num, boxs_default, train = False, image_size=320)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=0)
     network.load_state_dict(torch.load('network.pth'))
     network.eval()
