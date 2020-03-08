@@ -45,11 +45,21 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 #image2: draw ground truth "default" boxes on image2 (to show that you have assigned the object to the correct cell/cells)
                 
                 #you can use cv2.rectangle as follows:
-                #start_point = (x1, y1) #top left corner, x1<x2, y1<y2
-                #end_point = (x2, y2) #bottom right corner
-                #color = colors[j] #use red green blue to represent different classes
-                #thickness = 2
-                #cv2.rectangle(image?, start_point, end_point, color, thickness)
+                x1 = ann_box[i,0] - ann_box[i,2]/2
+                y1 = ann_box[i,1] - ann_box[i,3]/2
+                x2 = ann_box[i,0] + ann_box[i,2]/2
+                y2 = ann_box[i,1] + ann_box[i,3]/2
+                
+                start_point = (x1, y1) #top left corner, x1<x2, y1<y2
+                end_point = (x2, y2) #bottom right corner
+                color = colors[j] #use red green blue to represent different classes
+                thickness = 2
+                cv2.rectangle(image, start_point, end_point, color, thickness)
+                
+                ## CHENHAO TODO
+                
+                
+                
     
     #pred
     for i in range(len(pred_confidence)):
@@ -58,7 +68,21 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 #TODO:
                 #image3: draw network-predicted bounding boxes on image3
                 #image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
-    
+                x1 = pred_box[i,0] - pred_box[i,2]/2
+                y1 = pred_box[i,1] - pred_box[i,3]/2
+                x2 = pred_box[i,0] + pred_box[i,2]/2
+                y2 = pred_box[i,1] + pred_box[i,3]/2
+                
+                start_point = (x1, y1) #top left corner, x1<x2, y1<y2
+                end_point = (x2, y2) #bottom right corner
+                color = colors[j] #use red green blue to represent different classes
+                thickness = 2
+                cv2.rectangle(image, start_point, end_point, color, thickness)
+                
+                ## CHENHAO TODO
+                
+                
+                
     #combine four images into one
     h,w,_ = image1.shape
     image = np.zeros([h*2,w*2,3], np.uint8)

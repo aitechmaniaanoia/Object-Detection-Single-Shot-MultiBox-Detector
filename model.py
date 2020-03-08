@@ -162,7 +162,7 @@ class SSD(nn.Module):
         x_l_1 = self.conv_256_256_1_1(x_l)      
         x_l_1 = F.relu(self.bn256(x_l_1))
         x_l_1 = self.conv_256_256_3_1(x_l_1) 
-        x_l_1 = F.relu(self.bn256(x_l_1)) #[N,256,3,3]
+        x_l_1 = F.relu(self.bn256(x_l_1)) #[N,256,3,3] #############################################
         
         x_l_2 = self.conv_256_256_1_1(x_l_1)
         x_l_2 = F.relu(self.bn256(x_l_2))
