@@ -35,7 +35,6 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     #image3: draw network-predicted bounding boxes on image3
     #image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
     
-    
     #draw ground truth
     for i in range(len(ann_confidence)):
         for j in range(class_num):
@@ -45,19 +44,22 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 #image2: draw ground truth "default" boxes on image2 (to show that you have assigned the object to the correct cell/cells)
                 
                 #you can use cv2.rectangle as follows:
-                x1 = ann_box[i,0] - ann_box[i,2]/2
-                y1 = ann_box[i,1] - ann_box[i,3]/2
-                x2 = ann_box[i,0] + ann_box[i,2]/2
-                y2 = ann_box[i,1] + ann_box[i,3]/2
+                x1 = int(ann_box[i,0] - ann_box[i,2]/2)
+                y1 = int(ann_box[i,1] - ann_box[i,3]/2)
+                x2 = int(ann_box[i,0] + ann_box[i,2]/2)
+                y2 = int(ann_box[i,1] + ann_box[i,3]/2)
                 
                 start_point = (x1, y1) #top left corner, x1<x2, y1<y2
                 end_point = (x2, y2) #bottom right corner
                 color = colors[j] #use red green blue to represent different classes
                 thickness = 2
-                cv2.rectangle(image, start_point, end_point, color, thickness)
+                cv2.rectangle(image1, start_point, end_point, color, thickness)
                 
-                ## CHENHAO TODO
+                ## draw ground truth "default" boxes on image2
                 
+                #####################################################################################
+                
+                cv2.rectangle(image2, start_point, end_point, color, thickness)
                 
                 
     
@@ -68,19 +70,22 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 #TODO:
                 #image3: draw network-predicted bounding boxes on image3
                 #image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
-                x1 = pred_box[i,0] - pred_box[i,2]/2
-                y1 = pred_box[i,1] - pred_box[i,3]/2
-                x2 = pred_box[i,0] + pred_box[i,2]/2
-                y2 = pred_box[i,1] + pred_box[i,3]/2
+                x1 = int(pred_box[i,0] - pred_box[i,2]/2)
+                y1 = int(pred_box[i,1] - pred_box[i,3]/2)
+                x2 = int(pred_box[i,0] + pred_box[i,2]/2)
+                y2 = int(pred_box[i,1] + pred_box[i,3]/2)
                 
                 start_point = (x1, y1) #top left corner, x1<x2, y1<y2
                 end_point = (x2, y2) #bottom right corner
                 color = colors[j] #use red green blue to represent different classes
                 thickness = 2
-                cv2.rectangle(image, start_point, end_point, color, thickness)
+                cv2.rectangle(image3, start_point, end_point, color, thickness)
+
+                #draw network-predicted "default" boxes on image4
                 
-                ## CHENHAO TODO
+                #############################################################################################3
                 
+                cv2.rectangle(image4, start_point, end_point, color, thickness)
                 
                 
     #combine four images into one
@@ -112,11 +117,22 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, thresh
     
     
     #TODO: non maximum suppression
-    
-    ## CHENHAO TODO
+    for k in range(confidence_.shape[1]):
+        ious = iou(boxs_default[:,k], box_[:,k])
+
+        max_pro = np.argmax(confidence[:,k])
+        
+        # two bb in same class: iou > overlap, then one of the boxes must be suppressed
+        ious_true = ious>overlap
+            
+    # one class in one cell: confidence > threshold, consider this cell carrying a bounding box with this class.
     
     suppressed = []
     hoghest_prob = box_[max(confidence_)]
+    
+    return final_bounding_boux, classes
+    return suppressed # [5,5,num_of_classes]
+
 
 
 
