@@ -50,12 +50,15 @@ def SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box):
     
     # before_reshape[i,j,k] = after_reshape[i*num_boxes+j,k]
     
-    # confidence
-    # aaaaaaaaaaaaaaaaaaaaaaaaa FUCK    
-    err_confidence = F.binary_cross_entropy(pred_confidence, ann_confidence) + 3*F.binary_cross_entropy()
+    # get indices of all cells carrying objects in ground truth
+    idx = torch.where(ann_confidence == 1)
+    idx_empty = torch.where(ann_confidence == 0)
+    
+    # confidence  
+    err_confidence = F.binary_cross_entropy(pred_confidence[idx], ann_confidence[idx]) + 3*F.binary_cross_entropy(pred_confidence[idx_empty], ann_confidence[idx_empty])
     
     # box
-    err_box = F.smooth_l1_loss(pred_box, ann_box)
+    err_box = F.smooth_l1_loss(pred_box[idx], ann_box[idx])
     
     err = err_confidence + err_box
     
@@ -92,9 +95,9 @@ class SSD(nn.Module):
         
         ## second part: split two ways
         # left
-        self.conv_256_256_1_1 = nn.Conv2d(256, 256, kernel_size=1, stride=1, padding=1, bias=True)
-        self.conv_256_256_3_2 = nn.Conv2d(256, 256, kernel_size=3, stride=2, bias=True)
-        self.conv_256_256_3_1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, bias=True) ## need to fix
+        self.conv_256_256_1_1 = nn.Conv2d(256, 256, kernel_size=1, stride=1, bias=True)
+        self.conv_256_256_3_2 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=True)
+        self.conv_256_256_3_1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, bias=True) 
         
         self.conv_256_16_1_1 = nn.Conv2d(256, 16, kernel_size=1, stride=1, bias=True)
         
@@ -162,7 +165,7 @@ class SSD(nn.Module):
         x_l_1 = self.conv_256_256_1_1(x_l)      
         x_l_1 = F.relu(self.bn256(x_l_1))
         x_l_1 = self.conv_256_256_3_1(x_l_1) 
-        x_l_1 = F.relu(self.bn256(x_l_1)) #[N,256,3,3] #############################################
+        x_l_1 = F.relu(self.bn256(x_l_1)) #[N,256,3,3]
         
         x_l_2 = self.conv_256_256_1_1(x_l_1)
         x_l_2 = F.relu(self.bn256(x_l_2))
@@ -174,11 +177,11 @@ class SSD(nn.Module):
         x_l_final = x_l_final.reshape((batch_size, 16, 1)) # [N,16,1]
         
         # right 
-        x_r = self.conv_256_16_3_1(x)
-        x_r = x_r.reshape((batch_size, 16, 100))
+        x_r = self.conv_256_16_3_1(x)  #[N,16,10,10]
+        x_r = x_r.reshape((batch_size, 16, 100)) #[N.16.100]
         
         x_r_1 = self.conv_256_16_3_1(x_l)
-        x_r_1 = x_r_1.reshape((batch_size, 16, 25))
+        x_r_1 = x_r_1.reshape((batch_size, 16, 25)) #[N.16.25]
         
         x_r_2 = self.conv_256_16_3_1(x_l_1)
         x_r_2 = x_r_2.reshape((batch_size, 16, 9))
