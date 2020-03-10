@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from dataset import iou
+import math
 
 
 colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
@@ -44,22 +45,27 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 #image2: draw ground truth "default" boxes on image2 (to show that you have assigned the object to the correct cell/cells)
                 
                 #you can use cv2.rectangle as follows:
-                x1 = int(ann_box[i,0] - ann_box[i,2]/2)
-                y1 = int(ann_box[i,1] - ann_box[i,3]/2)
-                x2 = int(ann_box[i,0] + ann_box[i,2]/2)
-                y2 = int(ann_box[i,1] + ann_box[i,3]/2)
+                gx = boxs_default[i,2]*ann_box[i,0] + boxs_default[i,0] # p default   d ann_box
+                gy = boxs_default[i,3]*ann_box[i,1] + boxs_default[i,1]
+                gw = boxs_default[i,2]*math.exp(ann_box[i,2])
+                gh = boxs_default[i,3]*math.exp(ann_box[i,3])
+                
+                
+                x1 = int((gx - gw/2)*320)
+                y1 = int((gy - gh/2)*320)
+                x2 = int((gx + gw/2)*320)
+                y2 = int((gy + gh/2)*320)
                 
                 start_point = (x1, y1) #top left corner, x1<x2, y1<y2
                 end_point = (x2, y2) #bottom right corner
                 color = colors[j] #use red green blue to represent different classes
                 thickness = 2
-                cv2.rectangle(image1, start_point, end_point, color, thickness)
+                image1 = cv2.rectangle(image1, start_point, end_point, color, thickness)
                 
                 ## draw ground truth "default" boxes on image2
                 
-                #####################################################################################
                 
-                cv2.rectangle(image2, start_point, end_point, color, thickness)
+                image2 = cv2.rectangle(image2, start_point, end_point, color, thickness)
                 
                 
     
@@ -70,22 +76,27 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 #TODO:
                 #image3: draw network-predicted bounding boxes on image3
                 #image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
-                x1 = int(pred_box[i,0] - pred_box[i,2]/2)
-                y1 = int(pred_box[i,1] - pred_box[i,3]/2)
-                x2 = int(pred_box[i,0] + pred_box[i,2]/2)
-                y2 = int(pred_box[i,1] + pred_box[i,3]/2)
+                gx = boxs_default[i,2]*pred_box[i,0] + boxs_default[i,0] # p default   d ann_box
+                gy = boxs_default[i,3]*pred_box[i,1] + boxs_default[i,1]
+                gw = boxs_default[i,2]*math.exp(pred_box[i,2])
+                gh = boxs_default[i,3]*math.exp(pred_box[i,3])
+                
+                x1 = int((gx - gw/2)*320)
+                y1 = int((gy - gh/2)*320)
+                x2 = int((gx + gw/2)*320)
+                y2 = int((gy + gh/2)*320)
                 
                 start_point = (x1, y1) #top left corner, x1<x2, y1<y2
                 end_point = (x2, y2) #bottom right corner
                 color = colors[j] #use red green blue to represent different classes
                 thickness = 2
-                cv2.rectangle(image3, start_point, end_point, color, thickness)
+                image3 = cv2.rectangle(image3, start_point, end_point, color, thickness)
 
                 #draw network-predicted "default" boxes on image4
                 
                 #############################################################################################3
                 
-                cv2.rectangle(image4, start_point, end_point, color, thickness)
+                #cv2.rectangle(image4, start_point, end_point, color, thickness)
                 
                 
     #combine four images into one

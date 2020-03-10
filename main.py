@@ -29,8 +29,8 @@ args = parser.parse_args()
 
 class_num = 4 #cat dog person background
 
-num_epochs = 100
-batch_size = 32
+num_epochs = 1 # 100
+batch_size = 2 # 32
 
 boxs_default = default_box_generator([10,5,3,1], [0.2,0.4,0.6,0.8], [0.1,0.3,0.5,0.7])
 

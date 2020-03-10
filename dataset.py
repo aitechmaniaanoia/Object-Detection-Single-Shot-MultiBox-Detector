@@ -38,7 +38,8 @@ def default_box_generator(layers, large_scale, small_scale):
     small_scale = np.array(small_scale)
     large_scale = np.array(large_scale)
     
-    boxes = np.zeros((cell_num, 4, 8)) # [number of cells, default bounding boxes in each cell, attributes in each bounding box]
+    boxes = [] 
+    #boxes = np.zeros((cell_num, 4, 8)) # [number of cells, default bounding boxes in each cell, attributes in each bounding box]
     # 4: [ssize,ssize], [lsize,lsize], [lsize*sqrt(2),lsize/sqrt(2)], [lsize/sqrt(2),lsize*sqrt(2)]
     # 8: [x_center, y_center, box_width, box_height, x_min, y_min, x_max, y_max]
     #grid_size_group = [10,5,3,1]
@@ -46,15 +47,17 @@ def default_box_generator(layers, large_scale, small_scale):
     for grid_size in layers:
         
         k = layers.index(grid_size)
+        
+        box_width = np.array([small_scale[k], large_scale[k], large_scale[k]*np.sqrt(2), large_scale[k]/np.sqrt(2)]) # 4*1
+        box_height = np.array([small_scale[k], large_scale[k], large_scale[k]/np.sqrt(2), large_scale[k]*np.sqrt(2)]) # 4*1
+        
+        box = np.zeros((grid_size*grid_size, 4, 8))
         ## generate bounding boxes in each cell 
         for i in range(grid_size): 
             for j in range(grid_size):
                 
-                x_center = i/grid_size
-                y_center = j/grid_size
-                
-                box_width = np.array([small_scale[k], large_scale[k], large_scale[k]*np.sqrt(2), large_scale[k]*np.sqrt(2)]) # 4*1
-                box_height = np.array([small_scale[k], large_scale[k], large_scale[k]*np.sqrt(2), large_scale[k]*np.sqrt(2)]) # 4*1
+                x_center = ((i+1)/2)/grid_size
+                y_center = ((j+1)/2)/grid_size
                 
                 x_min = x_center - box_width/2 # 4*1
                 x_max = x_center + box_width/2 # 4*1
@@ -76,17 +79,21 @@ def default_box_generator(layers, large_scale, small_scale):
                 x_c[:] = x_center
                 y_c[:] = y_center
                 
-                boxes[i*grid_size+j,:,0] = x_c
-                boxes[i*grid_size+j,:,1] = y_c
-                boxes[i*grid_size+j,:,2] = box_width
-                boxes[i*grid_size+j,:,3] = box_height
-                boxes[i*grid_size+j,:,4] = x_min
-                boxes[i*grid_size+j,:,5] = y_min
-                boxes[i*grid_size+j,:,6] = x_max
-                boxes[i*grid_size+j,:,7] = y_max
+                box[i*grid_size+j,:,0] = x_c
+                box[i*grid_size+j,:,1] = y_c
+                box[i*grid_size+j,:,2] = box_width
+                box[i*grid_size+j,:,3] = box_height
+                box[i*grid_size+j,:,4] = x_min
+                box[i*grid_size+j,:,5] = y_min
+                box[i*grid_size+j,:,6] = x_max
+                box[i*grid_size+j,:,7] = y_max
+                
+        #boxes = np.concatenate((boxes, box, axis = 0))
+        boxes.append(box)
 
     # reshape boxes to [box_num, 8]
     # todo
+    boxes = np.concatenate((boxes[0], boxes[1], boxes[2], boxes[3]), axis = 0)
     boxes = boxes.reshape((box_num, 8))
     
     return boxes
@@ -122,35 +129,51 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     
     #compute iou between the default bounding boxes and the ground truth bounding box
     ious = iou(boxs_default, x_min,y_min,x_max,y_max)
-    ious_true = np.argmax(ious)
     ious_true = ious>threshold
+    
     #TODO:
     #update ann_box and ann_confidence, with respect to the ious and the default bounding boxes.
     #if a default bounding box and the ground truth bounding box have iou>threshold, then we will say this default bounding box is carrying an object.
     #this default bounding box will be used to update the corresponding entry in ann_box and ann_confidence
     
-    # g - ann_box
-    g = boxs_default[ious_true]
+    # p - ann_box
+    p = boxs_default[ious_true]
+    #TODO:
+    #make sure at least one default bounding box is used
+    #update ann_box and ann_confidence (do the same thing as above)
+    if len(p) == 0:
+        ious_true = np.argmax(ious)
+        p = boxs_default[ious_true]
+        p = p.reshape((1,8))
     
-    relative_center_x = (g[:,0] - x_min)/x_max
-    relative_center_y = (g[:,1] - y_min)/y_max
-    relative_width = np.log(g[:,2]/x_max)
-    relative_height = np.log(g[:,3]/y_max)
+    # relative_center_x = (g[:,0] - x_min)/x_max
+    # relative_center_y = (g[:,1] - y_min)/y_max
+    # relative_width = np.log(g[:,2]/x_max)
+    # relative_height = np.log(g[:,3]/y_max)
+        
+    gx = x_min + (x_max - x_min)/2
+    gy = y_min + (y_max - x_max)/2
+    gw = x_max - x_min
+    gh = y_max - y_min
+    
+    relative_center_x = (gx - p[:,0])/p[:,2]
+    relative_center_y = (gy - p[:,1])/p[:,3]
+    
+    #relative_center_x[relative_center_x < 0] = 0
+    #relative_center_x[relative_center_x > 1] = 1
+    
+    #relative_center_y[relative_center_y < 0] = 0
+    #relative_center_y[relative_center_y > 1] = 1
+    
+    relative_width = np.log(gw/p[:,2])
+    relative_height = np.log(gh/p[:,3])
     
     ann_box[ious_true,:] = np.array([relative_center_x, relative_center_y, 
                                      relative_width, relative_height]).T # [540,4]  
     
     ann_confidence[ious_true,cat_id] = 1 # [540,4] one hot vectors
     ann_confidence[ious_true,-1] = 0
-    
-    #TODO:
-    #make sure at least one default bounding box is used
-    #update ann_box and ann_confidence (do the same thing as above)
-    
-    # CHENHAO TODO
-    
-    # ???
-    
+
     return ann_box, ann_confidence
 
 
@@ -184,7 +207,7 @@ class COCO(torch.utils.data.Dataset):
     def __getitem__(self, index):
         ann_box = np.zeros([self.box_num,4], np.float32) #bounding boxes
         ann_confidence = np.zeros([self.box_num,self.class_num], np.float32) #one-hot vectors
-        #one-hot vectors with four classes
+        #one-hot vectors with four classesimage1
         #[1,0,0,0] -> cat
         #[0,1,0,0] -> dog
         #[0,0,1,0] -> person
@@ -225,23 +248,29 @@ class COCO(torch.utils.data.Dataset):
             line=ln.strip().split()
         
         class_id = int(line[0])
-        x_c = float(line[1]) 
-        y_c = float(line[2])
         w = float(line[3]) 
         h = float(line[4])
+        x_c = float(line[1]) + w/2 
+        y_c = float(line[2]) + h/2
+
         # from ground truth bounding box normalized
         # clip into image
-        def clip(value):
-            if value > 1:
-                value = 1
-            if value < 0:
-                value = 0
-            return value
+        #def clip(value):
+        #    if value > 1:
+        #        value = 1
+        #    if value < 0:
+        #        value = 0
+        #    return value
         
-        x_min = clip((x_c - w/2)/width)
-        y_min = clip((y_c - h/2)/height)
-        x_max = clip((x_c + w/2)/width)
-        y_max = clip((y_c + w/2)/height)
+        # x_min = (x_c - w/2)/width
+        # y_min = (y_c - h/2)/height
+        # x_max = (x_c + w/2)/width
+        # y_max = (y_c + w/2)/height
+        
+        x_min = (x_c - w/2)/height
+        y_min = (y_c - h/2)/width
+        x_max = (x_c + w/2)/height
+        y_max = (y_c + w/2)/width
          
         ann_box, ann_confidence = match(ann_box,ann_confidence,
                                         self.boxs_default,self.threshold,
