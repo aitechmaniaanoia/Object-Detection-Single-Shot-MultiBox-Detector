@@ -41,8 +41,8 @@ cudnn.benchmark = True
 
 
 if not args.test:
-    dataset = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = True, image_size=320)
-    dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
+    dataset = COCO("data2/train/images/", "data2/train/annotations/", class_num, boxs_default, train = True, image_size=320)
+    dataset_test = COCO("data2/train/images/", "data2/train/annotations/", class_num, boxs_default, train = False, image_size=320)
     
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=True, num_workers=0)
@@ -72,13 +72,13 @@ if not args.test:
             
             avg_loss += loss_net.data
             avg_count += 1
-
-        print('[%d] time: %f train loss: %f' % (epoch, time.time()-start_time, avg_loss/avg_count))
-        #visualize
-        pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
-        pred_box_ = pred_box[0].detach().cpu().numpy()
-        visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+            #visualize
+            pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
+            pred_box_ = pred_box[0].detach().cpu().numpy()
+            visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
         
+        print('[%d] time: %f train loss: %f' % (epoch, time.time()-start_time, avg_loss/avg_count))
+
 
         
         #TEST
@@ -101,14 +101,14 @@ if not args.test:
             #optional: implement a function to accumulate precision and recall to compute mAP or F1.
             #update_precision_recall(pred_confidence_, pred_box_, ann_confidence_.numpy(), ann_box_.numpy(), boxs_default,precision_,recall_,thres)
         
-        #visualize
-        pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
-        pred_box_ = pred_box[0].detach().cpu().numpy()
-        visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-                #visualize
-        pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
-        pred_box_ = pred_box[0].detach().cpu().numpy()
-        visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+            #visualize
+            pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
+            pred_box_ = pred_box[0].detach().cpu().numpy()
+            visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+        #         #visualize
+        # pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
+        # pred_box_ = pred_box[0].detach().cpu().numpy()
+        # visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
         
         #optional: compute F1
         #F1score = 2*precision*recall/np.maximum(precision+recall,1e-8)
@@ -123,7 +123,7 @@ if not args.test:
 
 else:
     #TEST
-    dataset_test = COCO("data/test/images/", "data/test/annotations/", class_num, boxs_default, train = False, image_size=320)
+    dataset_test = COCO("data2/test/images/", "data2/test/annotations/", class_num, boxs_default, train = False, image_size=320)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=0)
     network.load_state_dict(torch.load('network.pth'))
     network.eval()

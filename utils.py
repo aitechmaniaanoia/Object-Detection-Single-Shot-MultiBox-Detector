@@ -70,8 +70,6 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 
                 image2 = cv2.rectangle(image2, start_pt, end_pt, color, thickness)
                 
-                
-    #pred_confidence, pred_box = non_maximum_suppression(pred_confidence, pred_box, boxs_default, overlap=0.5, threshold=0.5)
     #pred
     for i in range(len(pred_confidence)):
         for j in range(class_num):
