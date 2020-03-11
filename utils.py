@@ -27,6 +27,9 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     image2 = np.zeros(image.shape,np.uint8)
     image3 = np.zeros(image.shape,np.uint8)
     image4 = np.zeros(image.shape,np.uint8)
+    
+    img_size = image.shape[0]
+    
     image1[:]=image[:]
     image2[:]=image[:]
     image3[:]=image[:]
@@ -50,11 +53,10 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 gw = boxs_default[i,2]*math.exp(ann_box[i,2])
                 gh = boxs_default[i,3]*math.exp(ann_box[i,3])
                 
-                
-                x1 = int((gx - gw/2)*320)
-                y1 = int((gy - gh/2)*320)
-                x2 = int((gx + gw/2)*320)
-                y2 = int((gy + gh/2)*320)
+                x1 = int((gx - gw/2)*img_size)
+                y1 = int((gy - gh/2)*img_size)
+                x2 = int((gx + gw/2)*img_size)
+                y2 = int((gy + gh/2)*img_size)
                 
                 start_point = (x1, y1) #top left corner, x1<x2, y1<y2
                 end_point = (x2, y2) #bottom right corner
@@ -63,12 +65,13 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 image1 = cv2.rectangle(image1, start_point, end_point, color, thickness)
                 
                 ## draw ground truth "default" boxes on image2
+                start_pt = (int(boxs_default[i,4]*img_size), int(boxs_default[i,5]*img_size))
+                end_pt = (int(boxs_default[i,6]*img_size), int(boxs_default[i,7]*img_size))
+                
+                image2 = cv2.rectangle(image2, start_pt, end_pt, color, thickness)
                 
                 
-                image2 = cv2.rectangle(image2, start_point, end_point, color, thickness)
-                
-                
-    
+    #pred_confidence, pred_box = non_maximum_suppression(pred_confidence, pred_box, boxs_default, overlap=0.5, threshold=0.5)
     #pred
     for i in range(len(pred_confidence)):
         for j in range(class_num):
@@ -81,22 +84,23 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 gw = boxs_default[i,2]*math.exp(pred_box[i,2])
                 gh = boxs_default[i,3]*math.exp(pred_box[i,3])
                 
-                x1 = int((gx - gw/2)*320)
-                y1 = int((gy - gh/2)*320)
-                x2 = int((gx + gw/2)*320)
-                y2 = int((gy + gh/2)*320)
+                x1 = int((gx - gw/2)*img_size)
+                y1 = int((gy - gh/2)*img_size)
+                x2 = int((gx + gw/2)*img_size)
+                y2 = int((gy + gh/2)*img_size)
                 
                 start_point = (x1, y1) #top left corner, x1<x2, y1<y2
                 end_point = (x2, y2) #bottom right corner
                 color = colors[j] #use red green blue to represent different classes
                 thickness = 2
+                
                 image3 = cv2.rectangle(image3, start_point, end_point, color, thickness)
 
                 #draw network-predicted "default" boxes on image4
+                start_pt = (int(boxs_default[i,4]*img_size), int(boxs_default[i,5]*img_size))
+                end_pt = (int(boxs_default[i,6]*img_size), int(boxs_default[i,7]*img_size))
                 
-                #############################################################################################3
-                
-                #cv2.rectangle(image4, start_point, end_point, color, thickness)
+                image4 = cv2.rectangle(image4, start_pt, end_pt, color, thickness)
                 
                 
     #combine four images into one
@@ -128,21 +132,52 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, thresh
     
     
     #TODO: non maximum suppression
-    for k in range(confidence_.shape[1]):
-        ious = iou(boxs_default[:,k], box_[:,k])
-
-        max_pro = np.argmax(confidence[:,k])
+    final_bounding_box = []
+    classes = []
+    
+    for k in range(confidence_.shape[1]):   # for each classes
+        #box = box_[:,:]
+        #prob = confidence_[:,k]
+        #C = boxs_default[:,:]
+        B = []
         
-        # two bb in same class: iou > overlap, then one of the boxes must be suppressed
-        ious_true = ious>overlap
+        #max_prob = box_[max(confidence_[:,k])]
+        ##GET INDEX OF MAX_PROB
+        idx = np.where(confidence_[:,k] == max(confidence_[:,k]))
+        max_prob = box_[idx,:]
+        
+        if max(confidence_[:,k]) > threshold:
+            B.append(max_prob)
+            # remove max_prob from A
+            box_ = np.delete(box_, idx, axis=0)
+            confidence_ = np.delete(confidence_, idx, axis=0)
+            boxs_default = np.delete(boxs_default, idx, axis=0)
             
-    # one class in one cell: confidence > threshold, consider this cell carrying a bounding box with this class.
+        # for all boxes in A
+        x_min = box_[:,0] - box_[:,2]/2
+        y_min = box_[:,1] - box_[:,3]/2
+        x_max = box_[:,0] + box_[:,2]/2
+        y_max = box_[:,1] + box_[:,3]/2
+        
+        ious = iou(boxs_default[:,:],x_min,y_min,x_max,y_max)
+        
+        #ious_large = ious > overlap
+        idx_ = np.where(ious > overlap)
+        
+        # remove large from A
+        box_ = np.delete(box_, idx_, axis=0)
+        confidence_ = np.delete(confidence_, idx_, axis=0)
+        boxs_default = np.delete(boxs_default, idx_, axis=0)
+
+        #B_all.append(B) # final boxes
+        final_bounding_box.append(B)
+        classes.append(k)
     
-    suppressed = []
-    hoghest_prob = box_[max(confidence_)]
     
-    return final_bounding_boux, classes
-    return suppressed # [5,5,num_of_classes]
+    final_bounding_box = []
+    classes = []
+    
+    return final_bounding_box, classes
 
 
 

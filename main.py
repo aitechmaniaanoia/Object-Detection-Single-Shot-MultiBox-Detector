@@ -27,10 +27,10 @@ args = parser.parse_args()
 #to train: python main.py
 #to test:  python main.py --test
 
-class_num = 4 #cat dog person background
+class_num = 4 # cat dog person background
 
-num_epochs = 1 # 100
-batch_size = 2 # 32
+num_epochs = 1 #100
+batch_size = 16
 
 boxs_default = default_box_generator([10,5,3,1], [0.2,0.4,0.6,0.8], [0.1,0.3,0.5,0.7])
 
@@ -74,12 +74,12 @@ if not args.test:
             avg_count += 1
 
         print('[%d] time: %f train loss: %f' % (epoch, time.time()-start_time, avg_loss/avg_count))
-        
         #visualize
         pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
         pred_box_ = pred_box[0].detach().cpu().numpy()
         visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
         
+
         
         #TEST
         network.eval()
@@ -105,6 +105,10 @@ if not args.test:
         pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
         pred_box_ = pred_box[0].detach().cpu().numpy()
         visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+                #visualize
+        pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
+        pred_box_ = pred_box[0].detach().cpu().numpy()
+        visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
         
         #optional: compute F1
         #F1score = 2*precision*recall/np.maximum(precision+recall,1e-8)

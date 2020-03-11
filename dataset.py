@@ -159,11 +159,11 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     relative_center_x = (gx - p[:,0])/p[:,2]
     relative_center_y = (gy - p[:,1])/p[:,3]
     
-    #relative_center_x[relative_center_x < 0] = 0
-    #relative_center_x[relative_center_x > 1] = 1
+    relative_center_x[relative_center_x < 0] = 0
+    relative_center_x[relative_center_x > 1] = 1
     
-    #relative_center_y[relative_center_y < 0] = 0
-    #relative_center_y[relative_center_y > 1] = 1
+    relative_center_y[relative_center_y < 0] = 0
+    relative_center_y[relative_center_y > 1] = 1
     
     relative_width = np.log(gw/p[:,2])
     relative_height = np.log(gh/p[:,3])
@@ -194,11 +194,7 @@ class COCO(torch.utils.data.Dataset):
         self.image_size = image_size
         
         #notice:
-        #you can split the dataset into 80% training and 20% testing here, by slicing self.img_names with respect to self.train
-        
-        ## CHENHAO TODO
-
-        ## ???
+        #you can split the dataset into 80% training and 20% testing here, by slicing self.img_names with respect to self.train    
 
 
     def __len__(self):
@@ -215,6 +211,11 @@ class COCO(torch.utils.data.Dataset):
         
         ann_confidence[:,-1] = 1 #the default class for all cells is set to "background"
         
+        if self.train == True:
+            index = int(index*0.8)
+        elif self.train == False:
+            index = int(index - index*0.8)
+            
         img_name = self.imgdir+self.img_names[index]
         ann_name = self.anndir+self.img_names[index][:-3]+"txt"
         
