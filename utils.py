@@ -58,6 +58,8 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 x2 = int((gx + gw/2)*img_size)
                 y2 = int((gy + gh/2)*img_size)
                 
+                #print(x1,y1,x2,y2)
+                
                 start_point = (x1, y1) #top left corner, x1<x2, y1<y2
                 end_point = (x2, y2) #bottom right corner
                 color = colors[j] #use red green blue to represent different classes
@@ -69,11 +71,12 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 end_pt = (int(boxs_default[i,6]*img_size), int(boxs_default[i,7]*img_size))
                 
                 image2 = cv2.rectangle(image2, start_pt, end_pt, color, thickness)
-                
+    #aa = 0
     #pred
     for i in range(len(pred_confidence)):
         for j in range(class_num):
             if pred_confidence[i,j]>0.5:
+                #aa = aa + 1
                 #TODO:
                 #image3: draw network-predicted bounding boxes on image3
                 #image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
@@ -87,6 +90,8 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 x2 = int((gx + gw/2)*img_size)
                 y2 = int((gy + gh/2)*img_size)
                 
+                #print(x1,y1,x2,y2)
+                
                 start_point = (x1, y1) #top left corner, x1<x2, y1<y2
                 end_point = (x2, y2) #bottom right corner
                 color = colors[j] #use red green blue to represent different classes
@@ -99,7 +104,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
                 end_pt = (int(boxs_default[i,6]*img_size), int(boxs_default[i,7]*img_size))
                 
                 image4 = cv2.rectangle(image4, start_pt, end_pt, color, thickness)
-                
+    #print(aa)
                 
     #combine four images into one
     h,w,_ = image1.shape

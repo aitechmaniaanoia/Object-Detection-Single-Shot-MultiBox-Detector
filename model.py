@@ -51,8 +51,8 @@ def SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box):
     # before_reshape[i,j,k] = after_reshape[i*num_boxes+j,k]
     
     # get indices of all cells carrying objects in ground truth
-    idx = torch.where(ann_confidence == 1)
-    idx_empty = torch.where(ann_confidence == 0)
+    idx = torch.where(ann_confidence[:,-1] == 0)
+    idx_empty = torch.where(ann_confidence[:,-1] == 1)
     
     # confidence  
     err_confidence = F.binary_cross_entropy(pred_confidence[idx], ann_confidence[idx]) + 3*F.binary_cross_entropy(pred_confidence[idx_empty], ann_confidence[idx_empty])
@@ -157,43 +157,74 @@ class SSD(nn.Module):
         
         #second part
         # left 
-        x_l = self.conv_256_256_1_1(x)
-        x_l = F.relu(self.bn256(x_l))
-        x_l = self.conv_256_256_3_2(x_l)
-        x_l = F.relu(self.bn256(x_l)) # [N,256,5,5]
+        x_l_box = self.conv_256_256_1_1(x)
+        x_l_box = F.relu(self.bn256(x_l_box))
+        x_l_box = self.conv_256_256_3_2(x_l_box)
+        x_l_box = F.relu(self.bn256(x_l_box)) # [N,256,5,5]
         
-        x_l_1 = self.conv_256_256_1_1(x_l)      
-        x_l_1 = F.relu(self.bn256(x_l_1))
-        x_l_1 = self.conv_256_256_3_1(x_l_1) 
-        x_l_1 = F.relu(self.bn256(x_l_1)) #[N,256,3,3]
+        x_l_confidence = self.conv_256_256_1_1(x)
+        x_l_confidence = F.relu(self.bn256(x_l_confidence))
+        x_l_confidence = self.conv_256_256_3_2(x_l_confidence)
+        x_l_confidence = F.relu(self.bn256(x_l_confidence)) # [N,256,5,5]
         
-        x_l_2 = self.conv_256_256_1_1(x_l_1)
-        x_l_2 = F.relu(self.bn256(x_l_2))
-        x_l_2 = self.conv_256_256_3_1(x_l_2)
-        x_l_2 = F.relu(self.bn256(x_l_2)) #[N,256,1,1]
+        x_l_1_box = self.conv_256_256_1_1(x_l_box)      
+        x_l_1_box = F.relu(self.bn256(x_l_1_box))
+        x_l_1_box = self.conv_256_256_3_1(x_l_1_box) 
+        x_l_1_box = F.relu(self.bn256(x_l_1_box)) #[N,256,3,3]
         
-        x_l_final = self.conv_256_16_1_1(x_l_2) # [N,16,1,1]
+        x_l_1_confidence = self.conv_256_256_1_1(x_l_confidence)      
+        x_l_1_confidence = F.relu(self.bn256(x_l_1_confidence))
+        x_l_1_confidence = self.conv_256_256_3_1(x_l_1_confidence) 
+        x_l_1_confidence = F.relu(self.bn256(x_l_1_confidence)) #[N,256,3,3]
+        
+        x_l_2_box = self.conv_256_256_1_1(x_l_1_box)
+        x_l_2_box = F.relu(self.bn256(x_l_2_box))
+        x_l_2_box = self.conv_256_256_3_1(x_l_2_box)
+        x_l_2_box = F.relu(self.bn256(x_l_2_box)) #[N,256,1,1]
+        
+        x_l_2_confidence = self.conv_256_256_1_1(x_l_1_confidence)
+        x_l_2_confidence = F.relu(self.bn256(x_l_2_confidence))
+        x_l_2_confidence = self.conv_256_256_3_1(x_l_2_confidence)
+        x_l_2_confidence = F.relu(self.bn256(x_l_2_confidence)) #[N,256,1,1]
+        
+        x_l_final_box = self.conv_256_16_1_1(x_l_2_box) # [N,16,1,1]
         # x_l_final reshape for box, confidence
-        x_l_final = x_l_final.reshape((batch_size, 16, 1)) # [N,16,1]
+        x_l_final_box = x_l_final_box.reshape((batch_size, 16, 1)) # [N,16,1]
         
+        x_l_final_confidence = self.conv_256_16_1_1(x_l_2_confidence) # [N,16,1,1]
+        # x_l_final reshape for box, confidence
+        x_l_final_confidence = x_l_final_confidence.reshape((batch_size, 16, 1)) # [N,16,1]
+         
         # right 
-        x_r = self.conv_256_16_3_1(x)  #[N,16,10,10]
-        x_r = x_r.reshape((batch_size, 16, 100)) #[N.16.100]
+        x_r_box = self.conv_256_16_3_1(x)  #[N,16,10,10]
+        x_r_box = x_r_box.reshape((batch_size, 16, 100)) #[N.16.100]
         
-        x_r_1 = self.conv_256_16_3_1(x_l)
-        x_r_1 = x_r_1.reshape((batch_size, 16, 25)) #[N.16.25]
+        x_r_confidence = self.conv_256_16_3_1(x)  #[N,16,10,10]
+        x_r_confidence = x_r_confidence.reshape((batch_size, 16, 100)) #[N.16.100]
         
-        x_r_2 = self.conv_256_16_3_1(x_l_1)
-        x_r_2 = x_r_2.reshape((batch_size, 16, 9))
+        x_r_1_box = self.conv_256_16_3_1(x_l_box)
+        x_r_1_box = x_r_1_box.reshape((batch_size, 16, 25)) #[N.16.25]
+        
+        x_r_1_confidence = self.conv_256_16_3_1(x_l_confidence)
+        x_r_1_confidence = x_r_1_confidence.reshape((batch_size, 16, 25)) #[N.16.25]
+        
+        x_r_2_box = self.conv_256_16_3_1(x_l_1_box)
+        x_r_2_box = x_r_2_box.reshape((batch_size, 16, 9))
+        
+        x_r_2_confidence = self.conv_256_16_3_1(x_l_1_confidence)
+        x_r_2_confidence = x_r_2_confidence.reshape((batch_size, 16, 9))
         
         # concatenate
         #bboxes = np.concatenate((x_l_final, x_r, x_r_1, x_r_2), axis = 2)
-        bboxes = torch.cat((x_l_final, x_r, x_r_1, x_r_2), axis = 2) 
+        bboxes = torch.cat((x_l_final_box, x_r_box, x_r_1_box, x_r_2_box), axis = 2) 
         bboxes = bboxes.permute(0, 2, 1)
         bboxes = bboxes.reshape((batch_size, 540, 4))
         
         # confidence (box + softmax)
-        confidence = F.softmax(bboxes)
+        confidence = torch.cat((x_l_final_confidence, x_r_confidence, x_r_1_confidence, x_r_2_confidence), axis = 2) 
+        confidence = confidence.permute(0, 2, 1)
+        confidence = confidence.reshape((batch_size, 540, 4))
+        confidence = F.softmax(confidence)
         
         return confidence,bboxes
 

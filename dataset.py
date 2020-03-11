@@ -152,7 +152,7 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     # relative_height = np.log(g[:,3]/y_max)
         
     gx = x_min + (x_max - x_min)/2
-    gy = y_min + (y_max - x_max)/2
+    gy = y_min + (y_max - y_min)/2
     gw = x_max - x_min
     gh = y_max - y_min
     
@@ -195,87 +195,140 @@ class COCO(torch.utils.data.Dataset):
         
         #notice:
         #you can split the dataset into 80% training and 20% testing here, by slicing self.img_names with respect to self.train    
+        
+        if self.train == True:
+            self.img_names = self.img_names[slice(0, int(0.8*len(self.img_names)), 1)]
+        
+        elif self.train == False:
+            self.img_names = self.img_names[slice(int(0.8*len(self.img_names)), -1, 1)]
 
 
     def __len__(self):
-        return len(self.img_names)
+        return len(self.img_names)*2
 
     def __getitem__(self, index):
-        ann_box = np.zeros([self.box_num,4], np.float32) #bounding boxes
-        ann_confidence = np.zeros([self.box_num,self.class_num], np.float32) #one-hot vectors
-        #one-hot vectors with four classesimage1
-        #[1,0,0,0] -> cat
-        #[0,1,0,0] -> dog
-        #[0,0,1,0] -> person
-        #[0,0,0,1] -> background
-        
-        ann_confidence[:,-1] = 1 #the default class for all cells is set to "background"
-        
-        # if self.train == True:
-        #     index = int(index*0.8)
-        # elif self.train == False:
-        #     index = int(index - index*0.8)
+        img_length = len(self.img_names)
+        if index < img_length:
+            ann_box = np.zeros([self.box_num,4], np.float32) #bounding boxes
+            ann_confidence = np.zeros([self.box_num,self.class_num], np.float32) #one-hot vectors
+            #one-hot vectors with four classesimage1
+            #[1,0,0,0] -> cat
+            #[0,1,0,0] -> dog
+            #[0,0,1,0] -> person
+            #[0,0,0,1] -> background
             
-        img_name = self.imgdir+self.img_names[index]
-        ann_name = self.anndir+self.img_names[index][:-3]+"txt"
+            ann_confidence[:,-1] = 1 #the default class for all cells is set to "background"
+            
+            img_name = self.imgdir+self.img_names[index]
+            ann_name = self.anndir+self.img_names[index][:-3]+"txt"
+            
+            #TODO:
+            #1. prepare the image [3,320,320], by reading image "img_name" first.
+            #2. prepare ann_box and ann_confidence, by reading txt file "ann_name" first.
+            #3. use the above function "match" to update ann_box and ann_confidence, for each bounding box in "ann_name".
+            #4. Data augmentation. You need to implement random cropping first. You can try adding other augmentations to get better results.
+    
+            #to use function "match":
+            #match(ann_box,ann_confidence,self.boxs_default,self.threshold,class_id,x_min,y_min,x_max,y_max)
+            #where [x_min,y_min,x_max,y_max] is from the ground truth bounding box, normalized with respect to the width or height of the image.
+            
+            #note: please make sure x_min,y_min,x_max,y_max are normalized with respect to the width or height of the image.
+            #For example, point (x=100, y=200) in a image with (width=1000, height=500) will be normalized to (x/width=0.1,y/height=0.4)
         
-        #TODO:
-        #1. prepare the image [3,320,320], by reading image "img_name" first.
-        #2. prepare ann_box and ann_confidence, by reading txt file "ann_name" first.
-        #3. use the above function "match" to update ann_box and ann_confidence, for each bounding box in "ann_name".
-        #4. Data augmentation. You need to implement random cropping first. You can try adding other augmentations to get better results.
+            image = cv2.imread(img_name)
+            
+            width = image.shape[0]
+            height = image.shape[1]
+            # resize
+            image = cv2.resize(image, (self.image_size,self.image_size))
+            
+            image = np.swapaxes(image,1,2) 
+            image = np.swapaxes(image,0,1) # [3,320,320]
+            
+            file_name = open(ann_name, "r")
+            line = file_name.readlines()
+            file_name.close()       
+            for ln in line[0:len(line)]:
+                line=ln.strip().split()
+            
+            class_id = int(line[0])
+            w = float(line[3])
+            h = float(line[4])
+            x_c = float(line[1]) + w/2 
+            y_c = float(line[2]) + h/2
+            
+            x_min = (x_c - w/2)/height
+            y_min = (y_c - h/2)/width
+            x_max = (x_c + w/2)/height
+            y_max = (y_c + w/2)/width
+            
+            ann_box, ann_confidence = match(ann_box,ann_confidence,
+                                            self.boxs_default,self.threshold,
+                                            class_id,
+                                            x_min,y_min,x_max,y_max)
+            
+            return image, ann_box, ann_confidence
+        
+        else: #data augmentation
+            index = index-img_length
+            
+            ann_box = np.zeros([self.box_num,4], np.float32) #bounding boxes
+            ann_confidence = np.zeros([self.box_num,self.class_num], np.float32) #one-hot vectors
+            
+            ann_confidence[:,-1] = 1 #the default class for all cells is set to "background"
+            
+            img_name = self.imgdir+self.img_names[index]
+            ann_name = self.anndir+self.img_names[index][:-3]+"txt"
+            
+            image = cv2.imread(img_name)
+            
+            width = image.shape[0]
+            height = image.shape[1]
+            # resize
+            image = cv2.resize(image, (self.image_size,self.image_size))
+            image = cv2.flip(image, -1)
+            
+            image = np.swapaxes(image,1,2) 
+            image = np.swapaxes(image,0,1) # [3,320,320]
+            
+            file_name = open(ann_name, "r")
+            line = file_name.readlines()
+            file_name.close()       
+            for ln in line[0:len(line)]:
+                line=ln.strip().split()
+            
+            class_id = int(line[0])
+            w = float(line[3])
+            h = float(line[4])
+            x_c = float(line[1]) + w/2
+            y_c = float(line[2]) + h/2
+            x_c = height - x_c
+            y_c = width - y_c 
+            # # calculate new point
+            # if x_c < height/2:    
+            #     x_c = x_c + height/2
+            # elif x_c > height/2: 
+            #     x_c = x_c - height/2
+            # else:
+            #     x_c = x_c
+                
+                
+            # if y_c < width/2:    
+            #     y_c = y_c + width/2
+            # elif y_c > width/2: 
+            #     y_c = y_c - width/2
+            # else:
+            #     y_c = y_c
+                 
+            x_min = (x_c - w/2)/height
+            y_min = (y_c - h/2)/width
+            x_max = (x_c + w/2)/height
+            y_max = (y_c + w/2)/width
+            
+            ann_box, ann_confidence = match(ann_box,ann_confidence,
+                                            self.boxs_default,self.threshold,
+                                            class_id,
+                                            x_min,y_min,x_max,y_max)
+            
+            return image, ann_box, ann_confidence
 
-        #to use function "match":
-        #match(ann_box,ann_confidence,self.boxs_default,self.threshold,class_id,x_min,y_min,x_max,y_max)
-        #where [x_min,y_min,x_max,y_max] is from the ground truth bounding box, normalized with respect to the width or height of the image.
-        
-        #note: please make sure x_min,y_min,x_max,y_max are normalized with respect to the width or height of the image.
-        #For example, point (x=100, y=200) in a image with (width=1000, height=500) will be normalized to (x/width=0.1,y/height=0.4)
-        
-        image = cv2.imread(img_name)
-        
-        width = image.shape[0]
-        height = image.shape[1]
-        # resize
-        image = cv2.resize(image, (self.image_size,self.image_size))
-        
-        image = np.swapaxes(image,1,2) 
-        image = np.swapaxes(image,0,1) # [3,320,320]
-        
-        file_name = open(ann_name, "r")
-        line = file_name.readlines()
-        file_name.close()       
-        for ln in line[0:len(line)]:
-            line=ln.strip().split()
-        
-        class_id = int(line[0])
-        w = float(line[3]) 
-        h = float(line[4])
-        x_c = float(line[1]) + w/2 
-        y_c = float(line[2]) + h/2
-
-        # from ground truth bounding box normalized
-        # clip into image
-        #def clip(value):
-        #    if value > 1:
-        #        value = 1
-        #    if value < 0:
-        #        value = 0
-        #    return value
-        
-        # x_min = (x_c - w/2)/width
-        # y_min = (y_c - h/2)/height
-        # x_max = (x_c + w/2)/width
-        # y_max = (y_c + w/2)/height
-        
-        x_min = (x_c - w/2)/height
-        y_min = (y_c - h/2)/width
-        x_max = (x_c + w/2)/height
-        y_max = (y_c + w/2)/width
-         
-        ann_box, ann_confidence = match(ann_box,ann_confidence,
-                                        self.boxs_default,self.threshold,
-                                        class_id,
-                                        x_min,y_min,x_max,y_max)
-        
-        return image, ann_box, ann_confidence

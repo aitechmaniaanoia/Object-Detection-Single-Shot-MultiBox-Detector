@@ -29,7 +29,7 @@ args = parser.parse_args()
 
 class_num = 4 # cat dog person background
 
-num_epochs = 1 #100
+num_epochs = 50 #100
 batch_size = 16
 
 boxs_default = default_box_generator([10,5,3,1], [0.2,0.4,0.6,0.8], [0.1,0.3,0.5,0.7])
@@ -39,10 +39,10 @@ network = SSD(class_num)
 network.cuda()
 cudnn.benchmark = True
 
-
+#batch_size = int(batch_size/2)
 if not args.test:
-    dataset = COCO("data2/train/images/", "data2/train/annotations/", class_num, boxs_default, train = True, image_size=320)
-    dataset_test = COCO("data2/train/images/", "data2/train/annotations/", class_num, boxs_default, train = False, image_size=320)
+    dataset = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = True, image_size=320)
+    dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
     
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=True, num_workers=0)
@@ -123,7 +123,7 @@ if not args.test:
 
 else:
     #TEST
-    dataset_test = COCO("data2/test/images/", "data2/test/annotations/", class_num, boxs_default, train = False, image_size=320)
+    dataset_test = COCO("data/test/images/", "data2/test/annotations/", class_num, boxs_default, train = False, image_size=320)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=0)
     network.load_state_dict(torch.load('network.pth'))
     network.eval()
