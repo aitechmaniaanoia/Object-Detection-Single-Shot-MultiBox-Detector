@@ -74,35 +74,101 @@ class SSD(nn.Module):
         self.class_num = class_num #num_of_classes, in this assignment, 4: cat, dog, person, background
         
         #TODO: define layers
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1, bias=True)
+        self.Seq_conv = nn.Sequential(nn.Conv2d(3, 64, kernel_size=3,stride=2, padding=1, bias=True),
+                                      nn.BatchNorm2d(64), nn.ReLU(),
+                                      
+                                      nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.BatchNorm2d(64), nn.ReLU(),
+                                      nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.BatchNorm2d(64), nn.ReLU(),
+                                      
+                                      nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=True),
+                                      nn.BatchNorm2d(128), nn.ReLU(),
+                                      
+                                      nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.BatchNorm2d(128), nn.ReLU(),
+                                      nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.BatchNorm2d(128), nn.ReLU(),
+                                      
+                                      nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=True),
+                                      nn.BatchNorm2d(256), nn.ReLU(),
+                                      
+                                      nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.BatchNorm2d(256), nn.ReLU(),
+                                      nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.BatchNorm2d(256), nn.ReLU(),
+                                      
+                                      nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1, bias=True),
+                                      nn.BatchNorm2d(512), nn.ReLU(),
+                                      
+                                      nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.BatchNorm2d(512), nn.ReLU(),
+                                      nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.BatchNorm2d(512), nn.ReLU(),
+                                      
+                                      nn.Conv2d(512, 256, kernel_size=3, stride=2, padding=1, bias=True),
+                                      nn.BatchNorm2d(256), nn.ReLU()
+                                      )
         
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=True) # 2 times
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=True)
         
-        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=True) # 2 times
-        self.conv5 = nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=True)
+        #self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1, bias=True)
+        #self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=True) # 2 times
+        #self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=True)
+        #self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=True) # 2 times
+        #self.conv5 = nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=True)
+        #self.conv6 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True) # 2 times
+        #self.conv7 = nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1, bias=True)
         
-        self.conv6 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True) # 2 times
-        self.conv7 = nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1, bias=True)
+        #self.conv8 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, bias=True) # 2 times
+        #self.conv9 = nn.Conv2d(512, 256, kernel_size=3, stride=2, padding=1, bias=True)
         
-        self.conv8 = nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, bias=True) # 2 times
-        self.conv9 = nn.Conv2d(512, 256, kernel_size=3, stride=2, padding=1, bias=True)
-        
-        self.bn64 = nn.BatchNorm2d(64)
-        self.bn128 = nn.BatchNorm2d(128)
-        self.bn256 = nn.BatchNorm2d(256)
-        self.bn512 = nn.BatchNorm2d(512)
+        #self.bn64 = nn.BatchNorm2d(64)
+        #self.bn128 = nn.BatchNorm2d(128)
+        #self.bn256 = nn.BatchNorm2d(256)
+        #self.bn512 = nn.BatchNorm2d(512)
         
         ## second part: split two ways
         # left
-        self.conv_256_256_1_1 = nn.Conv2d(256, 256, kernel_size=1, stride=1, bias=True)
-        self.conv_256_256_3_2 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=True)
-        self.conv_256_256_3_1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, bias=True) 
+        self.Seq_left_1 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=1, stride=1, bias=True),
+                                      nn.BatchNorm2d(256), nn.ReLU(),
+                                      
+                                      nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=True),
+                                      nn.BatchNorm2d(256), nn.ReLU()
+                                      )
         
-        self.conv_256_16_1_1 = nn.Conv2d(256, 16, kernel_size=1, stride=1, bias=True)
+        self.Seq_left_2 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=1, stride=1, bias=True),
+                                      nn.BatchNorm2d(256), nn.ReLU(),
+                                      
+                                      nn.Conv2d(256, 256, kernel_size=3, stride=1, bias=True),
+                                      nn.BatchNorm2d(256), nn.ReLU()
+                                      )
+        
+        self.Seq_left_3 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=1, stride=1, bias=True),
+                                      nn.BatchNorm2d(256), nn.ReLU(),
+                                      
+                                      nn.Conv2d(256, 256, kernel_size=3, stride=1, bias=True),
+                                      nn.BatchNorm2d(256), nn.ReLU()
+                                      )
+        
+        self.Seq_left_4_box = nn.Conv2d(256, 16, kernel_size=1, stride=1, bias=True)
+        self.Seq_left_4_confidence = nn.Conv2d(256, 16, kernel_size=1, stride=1, bias=True)
+        
+        #self.conv_256_256_1_1 = nn.Conv2d(256, 256, kernel_size=1, stride=1, bias=True)
+        #self.conv_256_256_3_2 = nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=True)
+        #self.conv_256_256_3_1 = nn.Conv2d(256, 256, kernel_size=3, stride=1, bias=True) 
+        #self.conv_256_16_1_1 = nn.Conv2d(256, 16, kernel_size=1, stride=1, bias=True)
         
         # right
-        self.conv_256_16_3_1 = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1, bias=True)
+        self.right_1_box = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1, bias=True)
+        self.right_1_confidence = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1, bias=True)
+        
+        self.right_2_box = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1, bias=True)
+        self.right_2_confidence = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1, bias=True)
+        
+        self.right_3_box = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1, bias=True)
+        self.right_3_confidence = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1, bias=True)
+        
+        #self.conv_256_16_3_1 = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1, bias=True)
         
         
     def forward(self, x):
@@ -120,98 +186,115 @@ class SSD(nn.Module):
         #bboxes - [batch_size,4*(10*10+5*5+3*3+1*1),4]
         batch_size = len(x)
         
-        x = self.conv1(x)
-        x = F.relu(self.bn64(x))
+        # x = self.conv1(x)
+        # x = F.relu(self.bn64(x))
         
-        x = self.conv2(x)
-        x = F.relu(self.bn64(x))
-        x = self.conv2(x)
-        x = F.relu(self.bn64(x))
+        # x = self.conv2(x)
+        # x = F.relu(self.bn64(x))
+        # x = self.conv2(x)
+        # x = F.relu(self.bn64(x))
         
-        x = self.conv3(x)
-        x = F.relu(self.bn128(x))
+        # x = self.conv3(x)
+        # x = F.relu(self.bn128(x))
         
-        x = self.conv4(x)
-        x = F.relu(self.bn128(x))
-        x = self.conv4(x)
-        x = F.relu(self.bn128(x))
+        # x = self.conv4(x)
+        # x = F.relu(self.bn128(x))
+        # x = self.conv4(x)
+        # x = F.relu(self.bn128(x))
         
-        x = self.conv5(x)
-        x = F.relu(self.bn256(x))
+        # x = self.conv5(x)
+        # x = F.relu(self.bn256(x))
         
-        x = self.conv6(x)
-        x = F.relu(self.bn256(x))
-        x = self.conv6(x)
-        x = F.relu(self.bn256(x))
+        # x = self.conv6(x)
+        # x = F.relu(self.bn256(x))
+        # x = self.conv6(x)
+        # x = F.relu(self.bn256(x))
         
-        x = self.conv7(x)
-        x = F.relu(self.bn512(x))
+        # x = self.conv7(x)
+        # x = F.relu(self.bn512(x))
         
-        x = self.conv8(x)
-        x = F.relu(self.bn512(x))
-        x = self.conv8(x)
-        x = F.relu(self.bn512(x))
+        # x = self.conv8(x)
+        # x = F.relu(self.bn512(x))
+        # x = self.conv8(x)
+        # x = F.relu(self.bn512(x))
         
-        x = self.conv9(x)
-        x = F.relu(self.bn256(x))
+        # x = self.conv9(x)
+        # x = F.relu(self.bn256(x))
+        
+        x = self.Seq_conv(x)
         
         #second part
         # left 
-        x_l_box = self.conv_256_256_1_1(x)
-        x_l_box = F.relu(self.bn256(x_l_box))
-        x_l_box = self.conv_256_256_3_2(x_l_box)
-        x_l_box = F.relu(self.bn256(x_l_box)) # [N,256,5,5]
+        x_l_1 = self.Seq_left_1(x)
+        x_l_2 = self.Seq_left_2(x_l_1)
         
-        x_l_confidence = self.conv_256_256_1_1(x)
-        x_l_confidence = F.relu(self.bn256(x_l_confidence))
-        x_l_confidence = self.conv_256_256_3_2(x_l_confidence)
-        x_l_confidence = F.relu(self.bn256(x_l_confidence)) # [N,256,5,5]
+        x_l_3_box = self.Seq_left_3(x_l_2)
+        x_l_3_confidence = self.Seq_left_3(x_l_2)
         
-        x_l_1_box = self.conv_256_256_1_1(x_l_box)      
-        x_l_1_box = F.relu(self.bn256(x_l_1_box))
-        x_l_1_box = self.conv_256_256_3_1(x_l_1_box) 
-        x_l_1_box = F.relu(self.bn256(x_l_1_box)) #[N,256,3,3]
+        x_l_final_box = self.Seq_left_4_box(x_l_3_box)
+        x_l_final_confidence = self.Seq_left_4_confidence(x_l_3_confidence)
         
-        x_l_1_confidence = self.conv_256_256_1_1(x_l_confidence)      
-        x_l_1_confidence = F.relu(self.bn256(x_l_1_confidence))
-        x_l_1_confidence = self.conv_256_256_3_1(x_l_1_confidence) 
-        x_l_1_confidence = F.relu(self.bn256(x_l_1_confidence)) #[N,256,3,3]
-        
-        x_l_2_box = self.conv_256_256_1_1(x_l_1_box)
-        x_l_2_box = F.relu(self.bn256(x_l_2_box))
-        x_l_2_box = self.conv_256_256_3_1(x_l_2_box)
-        x_l_2_box = F.relu(self.bn256(x_l_2_box)) #[N,256,1,1]
-        
-        x_l_2_confidence = self.conv_256_256_1_1(x_l_1_confidence)
-        x_l_2_confidence = F.relu(self.bn256(x_l_2_confidence))
-        x_l_2_confidence = self.conv_256_256_3_1(x_l_2_confidence)
-        x_l_2_confidence = F.relu(self.bn256(x_l_2_confidence)) #[N,256,1,1]
-        
-        x_l_final_box = self.conv_256_16_1_1(x_l_2_box) # [N,16,1,1]
-        # x_l_final reshape for box, confidence
         x_l_final_box = x_l_final_box.reshape((batch_size, 16, 1)) # [N,16,1]
-        
-        x_l_final_confidence = self.conv_256_16_1_1(x_l_2_confidence) # [N,16,1,1]
-        # x_l_final reshape for box, confidence
         x_l_final_confidence = x_l_final_confidence.reshape((batch_size, 16, 1)) # [N,16,1]
+        
+        # x_l_box = self.conv_256_256_1_1(x)
+        # x_l_box = F.relu(self.bn256(x_l_box))
+        # x_l_box = self.conv_256_256_3_2(x_l_box)
+        # x_l_box = F.relu(self.bn256(x_l_box)) # [N,256,5,5]
+        
+        # x_l_confidence = self.conv_256_256_1_1(x)
+        # x_l_confidence = F.relu(self.bn256(x_l_confidence))
+        # x_l_confidence = self.conv_256_256_3_2(x_l_confidence)
+        # x_l_confidence = F.relu(self.bn256(x_l_confidence)) # [N,256,5,5]
+        
+        # x_l_1_box = self.conv_256_256_1_1(x_l_box)      
+        # x_l_1_box = F.relu(self.bn256(x_l_1_box))
+        # x_l_1_box = self.conv_256_256_3_1(x_l_1_box) 
+        # x_l_1_box = F.relu(self.bn256(x_l_1_box)) #[N,256,3,3]
+        
+        # x_l_1_confidence = self.conv_256_256_1_1(x_l_confidence)      
+        # x_l_1_confidence = F.relu(self.bn256(x_l_1_confidence))
+        # x_l_1_confidence = self.conv_256_256_3_1(x_l_1_confidence) 
+        # x_l_1_confidence = F.relu(self.bn256(x_l_1_confidence)) #[N,256,3,3]
+        
+        # x_l_2_box = self.conv_256_256_1_1(x_l_1_box)
+        # x_l_2_box = F.relu(self.bn256(x_l_2_box))
+        # x_l_2_box = self.conv_256_256_3_1(x_l_2_box)
+        # x_l_2_box = F.relu(self.bn256(x_l_2_box)) #[N,256,1,1]
+        
+        # x_l_2_confidence = self.conv_256_256_1_1(x_l_1_confidence)
+        # x_l_2_confidence = F.relu(self.bn256(x_l_2_confidence))
+        # x_l_2_confidence = self.conv_256_256_3_1(x_l_2_confidence)
+        # x_l_2_confidence = F.relu(self.bn256(x_l_2_confidence)) #[N,256,1,1]
+        
+        # x_l_final_box = self.conv_256_16_1_1(x_l_2_box) # [N,16,1,1]
+        # x_l_final reshape for box, confidence
+        # x_l_final_box = x_l_final_box.reshape((batch_size, 16, 1)) # [N,16,1]
+        
+        # x_l_final_confidence = self.conv_256_16_1_1(x_l_2_confidence) # [N,16,1,1]
+        # x_l_final reshape for box, confidence
+        # x_l_final_confidence = x_l_final_confidence.reshape((batch_size, 16, 1)) # [N,16,1]
          
         # right 
-        x_r_box = self.conv_256_16_3_1(x)  #[N,16,10,10]
-        x_r_box = x_r_box.reshape((batch_size, 16, 100)) #[N.16.100]
-        
-        x_r_confidence = self.conv_256_16_3_1(x)  #[N,16,10,10]
+        x_r_box = self.right_1_box(x)
+        x_r_confidence = self.right_1_confidence(x)
+        #x_r_box = self.conv_256_16_3_1(x)  #[N,16,10,10]
+        x_r_box = x_r_box.reshape((batch_size, 16, 100)) #[N.16.100]        
+        #x_r_confidence = self.conv_256_16_3_1(x)  #[N,16,10,10]
         x_r_confidence = x_r_confidence.reshape((batch_size, 16, 100)) #[N.16.100]
         
-        x_r_1_box = self.conv_256_16_3_1(x_l_box)
+        x_r_1_box = self.right_2_box(x_l_1)
+        #x_r_1_box = self.conv_256_16_3_1(x_l_box)
         x_r_1_box = x_r_1_box.reshape((batch_size, 16, 25)) #[N.16.25]
-        
-        x_r_1_confidence = self.conv_256_16_3_1(x_l_confidence)
+        x_r_1_confidence = self.right_2_confidence(x_l_1)
+        #x_r_1_confidence = self.conv_256_16_3_1(x_l_confidence)
         x_r_1_confidence = x_r_1_confidence.reshape((batch_size, 16, 25)) #[N.16.25]
         
-        x_r_2_box = self.conv_256_16_3_1(x_l_1_box)
+        x_r_2_box = self.right_3_box(x_l_2)
+        #x_r_2_box = self.conv_256_16_3_1(x_l_1_box)
         x_r_2_box = x_r_2_box.reshape((batch_size, 16, 9))
-        
-        x_r_2_confidence = self.conv_256_16_3_1(x_l_1_confidence)
+        x_r_2_confidence = self.right_3_confidence(x_l_2)
+        #x_r_2_confidence = self.conv_256_16_3_1(x_l_1_confidence)
         x_r_2_confidence = x_r_2_confidence.reshape((batch_size, 16, 9))
         
         # concatenate

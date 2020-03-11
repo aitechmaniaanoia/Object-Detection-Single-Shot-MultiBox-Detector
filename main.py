@@ -41,8 +41,8 @@ cudnn.benchmark = True
 
 #batch_size = int(batch_size/2)
 if not args.test:
-    dataset = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = True, image_size=320)
-    dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
+    dataset = COCO("data2/train/images/", "data2/train/annotations/", class_num, boxs_default, train = True, image_size=320)
+    dataset_test = COCO("data2/train/images/", "data2/train/annotations/", class_num, boxs_default, train = False, image_size=320)
     
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=True, num_workers=0)
@@ -72,11 +72,14 @@ if not args.test:
             
             avg_loss += loss_net.data
             avg_count += 1
+            
+            ############## test NMS ###############
+            #pred_confidence, pred_box = non_maximum_suppression(pred_confidence, pred_box, boxs_default)
             #visualize
             pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
             pred_box_ = pred_box[0].detach().cpu().numpy()
             visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-        
+            
         print('[%d] time: %f train loss: %f' % (epoch, time.time()-start_time, avg_loss/avg_count))
 
 
@@ -105,11 +108,8 @@ if not args.test:
             pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
             pred_box_ = pred_box[0].detach().cpu().numpy()
             visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-        #         #visualize
-        # pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
-        # pred_box_ = pred_box[0].detach().cpu().numpy()
-        # visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
         
+        #cv2.imwrite('visualized/result_%d.jpg'%epoch, result_image)
         #optional: compute F1
         #F1score = 2*precision*recall/np.maximum(precision+recall,1e-8)
         #print(F1score)
@@ -139,7 +139,7 @@ else:
         pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
         pred_box_ = pred_box[0].detach().cpu().numpy()
         
-        #pred_confidence_,pred_box_ = non_maximum_suppression(pred_confidence_,pred_box_,boxs_default)
+        pred_confidence_,pred_box_ = non_maximum_suppression(pred_confidence_,pred_box_,boxs_default)
         
         #TODO: save predicted bounding boxes and classes to a txt file.
         #you will need to submit those files for grading this assignment

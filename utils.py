@@ -115,6 +115,8 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     image[h:,w:] = image4
     cv2.imshow(windowname+" [[gt_box,gt_dft],[pd_box,pd_dft]]",image)
     cv2.waitKey(1)
+    
+    #return image
     #if you are using a server, you may not be able to display the image.
     #in that case, please save the image using cv2.imwrite and check the saved image for visualization.
 
@@ -180,7 +182,7 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, thresh
     final_bounding_box = []
     classes = []
     
-    return final_bounding_box, classes
+    return pred_confidence_, pred_box_
 
 
 
