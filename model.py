@@ -74,39 +74,39 @@ class SSD(nn.Module):
         self.class_num = class_num #num_of_classes, in this assignment, 4: cat, dog, person, background
         
         #TODO: define layers
-        self.Seq_conv = nn.Sequential(nn.Conv2d(3, 64, kernel_size=3,stride=2, padding=1, bias=True),
+        self.Seq_conv = nn.Sequential(nn.Conv2d(3, 64, kernel_size=3,stride=2, padding=1),
                                       nn.BatchNorm2d(64), nn.ReLU(),
                                       
-                                      nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
                                       nn.BatchNorm2d(64), nn.ReLU(),
-                                      nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
                                       nn.BatchNorm2d(64), nn.ReLU(),
                                       
-                                      nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=True),
+                                      nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
                                       nn.BatchNorm2d(128), nn.ReLU(),
                                       
-                                      nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
                                       nn.BatchNorm2d(128), nn.ReLU(),
-                                      nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
                                       nn.BatchNorm2d(128), nn.ReLU(),
                                       
-                                      nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1, bias=True),
+                                      nn.Conv2d(128, 256, kernel_size=3, stride=2, padding=1),
                                       nn.BatchNorm2d(256), nn.ReLU(),
                                       
-                                      nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
                                       nn.BatchNorm2d(256), nn.ReLU(),
-                                      nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
                                       nn.BatchNorm2d(256), nn.ReLU(),
                                       
-                                      nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1, bias=True),
+                                      nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1),
                                       nn.BatchNorm2d(512), nn.ReLU(),
                                       
-                                      nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
                                       nn.BatchNorm2d(512), nn.ReLU(),
-                                      nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, bias=True),
+                                      nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
                                       nn.BatchNorm2d(512), nn.ReLU(),
                                       
-                                      nn.Conv2d(512, 256, kernel_size=3, stride=2, padding=1, bias=True),
+                                      nn.Conv2d(512, 256, kernel_size=3, stride=2, padding=1),
                                       nn.BatchNorm2d(256), nn.ReLU()
                                       )
         
@@ -129,24 +129,24 @@ class SSD(nn.Module):
         
         ## second part: split two ways
         # left
-        self.Seq_left_1 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=1, stride=1, bias=True),
+        self.Seq_left_1 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=1, stride=1),
                                       nn.BatchNorm2d(256), nn.ReLU(),
                                       
-                                      nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1, bias=True),
+                                      nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1),
                                       nn.BatchNorm2d(256), nn.ReLU()
                                       )
         
-        self.Seq_left_2 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=1, stride=1, bias=True),
+        self.Seq_left_2 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=1, stride=1),
                                       nn.BatchNorm2d(256), nn.ReLU(),
                                       
-                                      nn.Conv2d(256, 256, kernel_size=3, stride=1, bias=True),
+                                      nn.Conv2d(256, 256, kernel_size=3, stride=1),
                                       nn.BatchNorm2d(256), nn.ReLU()
                                       )
         
-        self.Seq_left_3 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=1, stride=1, bias=True),
+        self.Seq_left_3 = nn.Sequential(nn.Conv2d(256, 256, kernel_size=1, stride=1),
                                       nn.BatchNorm2d(256), nn.ReLU(),
                                       
-                                      nn.Conv2d(256, 256, kernel_size=3, stride=1, bias=True),
+                                      nn.Conv2d(256, 256, kernel_size=3, stride=1),
                                       nn.BatchNorm2d(256), nn.ReLU()
                                       )
         
@@ -299,12 +299,12 @@ class SSD(nn.Module):
         
         # concatenate
         #bboxes = np.concatenate((x_l_final, x_r, x_r_1, x_r_2), axis = 2)
-        bboxes = torch.cat((x_l_final_box, x_r_box, x_r_1_box, x_r_2_box), axis = 2) 
+        bboxes = torch.cat((x_r_box, x_r_1_box, x_r_2_box, x_l_final_box,), axis = 2) 
         bboxes = bboxes.permute(0, 2, 1)
         bboxes = bboxes.reshape((batch_size, 540, 4))
         
         # confidence (box + softmax)
-        confidence = torch.cat((x_l_final_confidence, x_r_confidence, x_r_1_confidence, x_r_2_confidence), axis = 2) 
+        confidence = torch.cat((x_r_confidence, x_r_1_confidence, x_r_2_confidence, x_l_final_confidence), axis = 2) 
         confidence = confidence.permute(0, 2, 1)
         confidence = confidence.reshape((batch_size, 540, 4))
         confidence = F.softmax(confidence)

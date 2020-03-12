@@ -9,6 +9,7 @@ import torchvision.utils as vutils
 from torch.autograd import Variable
 import torch.nn.functional as F
 import numpy as np
+import random
 import math
 import os
 import cv2
@@ -79,14 +80,23 @@ def default_box_generator(layers, large_scale, small_scale):
                 x_c[:] = x_center
                 y_c[:] = y_center
                 
-                box[i*grid_size+j,:,0] = x_c
-                box[i*grid_size+j,:,1] = y_c
-                box[i*grid_size+j,:,2] = box_width
-                box[i*grid_size+j,:,3] = box_height
-                box[i*grid_size+j,:,4] = x_min
-                box[i*grid_size+j,:,5] = y_min
-                box[i*grid_size+j,:,6] = x_max
-                box[i*grid_size+j,:,7] = y_max
+                # box[i*grid_size+j,:,0] = x_c
+                # box[i*grid_size+j,:,1] = y_c
+                # box[i*grid_size+j,:,2] = box_width
+                # box[i*grid_size+j,:,3] = box_height
+                # box[i*grid_size+j,:,4] = x_min
+                # box[i*grid_size+j,:,5] = y_min
+                # box[i*grid_size+j,:,6] = x_max
+                # box[i*grid_size+j,:,7] = y_max
+                
+                box[j*grid_size+i,:,0] = x_c
+                box[j*grid_size+i,:,1] = y_c
+                box[j*grid_size+i,:,2] = box_width
+                box[j*grid_size+i,:,3] = box_height
+                box[j*grid_size+i,:,4] = x_min
+                box[j*grid_size+i,:,5] = y_min
+                box[j*grid_size+i,:,6] = x_max
+                box[j*grid_size+i,:,7] = y_max
                 
         #boxes = np.concatenate((boxes, box, axis = 0))
         boxes.append(box)
@@ -287,12 +297,6 @@ class COCO(torch.utils.data.Dataset):
             
             width = image.shape[0]
             height = image.shape[1]
-            # resize
-            image = cv2.resize(image, (self.image_size,self.image_size))
-            image = cv2.flip(image, -1)
-            
-            image = np.swapaxes(image,1,2) 
-            image = np.swapaxes(image,0,1) # [3,320,320]
             
             file_name = open(ann_name, "r")
             line = file_name.readlines()
@@ -301,27 +305,38 @@ class COCO(torch.utils.data.Dataset):
                 line=ln.strip().split()
             
             class_id = int(line[0])
+            # random crop around box
             w = float(line[3])
             h = float(line[4])
-            x_c = float(line[1]) + w/2
+            x_c = float(line[1]) + w/2 
             y_c = float(line[2]) + h/2
+            
+            x_min = x_c - w/2
+            y_min = y_c - h/2
+            #x_max = (x_c + w/2)/height
+            #y_max = (y_c + w/2)/width
+            
+            crop_x = random.randint(0, int(x_min))
+            crop_y = random.randint(0, int(y_min))
+            
+            image = image[crop_y:-1,crop_x:-1,:]
+            
+            x_c = x_c - crop_x
+            y_c = y_c - crop_y
+            
+            # resize
+            image = cv2.resize(image, (self.image_size,self.image_size))
+            image = cv2.flip(image, -1)
+            
+            image = np.swapaxes(image,1,2) 
+            image = np.swapaxes(image,0,1) # [3,320,320]
+
+            #w = float(line[3])
+            #h = float(line[4])
+            #x_c = float(line[1]) + w/2
+            #y_c = float(line[2]) + h/2
             x_c = height - x_c
             y_c = width - y_c 
-            # # calculate new point
-            # if x_c < height/2:    
-            #     x_c = x_c + height/2
-            # elif x_c > height/2: 
-            #     x_c = x_c - height/2
-            # else:
-            #     x_c = x_c
-                
-                
-            # if y_c < width/2:    
-            #     y_c = y_c + width/2
-            # elif y_c > width/2: 
-            #     y_c = y_c - width/2
-            # else:
-            #     y_c = y_c
                  
             x_min = (x_c - w/2)/height
             y_min = (y_c - h/2)/width

@@ -50,6 +50,8 @@ if not args.test:
     optimizer = optim.Adam(network.parameters(), lr = 1e-4)
     #feel free to try other optimizers and parameters.
     
+    #num = 0
+    
     start_time = time.time()
 
     for epoch in range(num_epochs):
@@ -74,9 +76,9 @@ if not args.test:
             avg_count += 1
             
             #visualize
-            pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
-            pred_box_ = pred_box[0].detach().cpu().numpy()
-            visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+        #pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
+        #pred_box_ = pred_box[0].detach().cpu().numpy()
+        #visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
             
         print('[%d] time: %f train loss: %f' % (epoch, time.time()-start_time, avg_loss/avg_count))
 
@@ -106,25 +108,29 @@ if not args.test:
             pred_confidence_1 = pred_confidence[0].detach().cpu().numpy()
             pred_box_1 = pred_box[0].detach().cpu().numpy()
             result_image = visualize_pred("test", pred_confidence_1, pred_box_1, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-            cv2.imwrite('visualized1/result_before_NMS_%d.jpg'%epoch, result_image)
+            if epoch >= 39:
+                cv2.imwrite('visualized1/result_before_NMS_%d.jpg'%epoch, result_image)
         
             # after NMS visualize
-            # pred_confidence_2 = pred_confidence[0].detach().cpu().numpy()
-            # pred_box_2 = pred_box[0].detach().cpu().numpy()
-            # pred_confidence_2, pred_box_2 = non_maximum_suppression(pred_confidence_2, pred_box_2, boxs_default)
+            pred_confidence_2 = pred_confidence[0].detach().cpu().numpy()
+            pred_box_2 = pred_box[0].detach().cpu().numpy()
+            pred_confidence_2, pred_box_2 = non_maximum_suppression(pred_confidence_2, pred_box_2, boxs_default)
             
-            # result_image2 = visualize_pred("test", pred_confidence_2, pred_box_2, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-            # cv2.imwrite('visualized2/result_after_NMS_%d.jpg'%epoch, result_image2)
+            result_image2 = visualize_pred("test", pred_confidence_2, pred_box_2, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+            cv2.imwrite('visualized2/result_after_NMS_%d.jpg'%epoch, result_image2)
         
         #optional: compute F1
         #F1score = 2*precision*recall/np.maximum(precision+recall,1e-8)
         #print(F1score)
+        #torch.save(network.state_dict(), 'network_%d.pth'%num)
+        #num = num + 1
         
         #save weights
-        if epoch%10==9:
+        if epoch >= 39 and epoch%10==9:
             #save last network
             print('saving net...')
-            torch.save(network.state_dict(), 'network.pth')
+            torch.save(network.state_dict(), 'network_%d.pth'%epoch)
+            #num = num + 1
 
 
 else:
@@ -150,7 +156,7 @@ else:
         
         #TODO: save predicted bounding boxes and classes to a txt file.
         #you will need to submit those files for grading this assignment
-        ann_path = "data2/test/annotations/"
+        ann_path = "data/test/annotations/"
         # get image name
         ann_name = img_names[i][:-3]+"txt"
         save_ann_txt(ann_path, ann_name, confidence, box)
