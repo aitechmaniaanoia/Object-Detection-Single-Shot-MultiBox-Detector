@@ -116,6 +116,9 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     cv2.imshow(windowname+" [[gt_box,gt_dft],[pd_box,pd_dft]]",image)
     cv2.waitKey(1)
     
+    if windowname == 'test':
+        # save image
+        return image
     #return image
     #if you are using a server, you may not be able to display the image.
     #in that case, please save the image using cv2.imwrite and check the saved image for visualization.
@@ -134,60 +137,125 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.5, thresh
     #depends on your implementation.
     #if you wish to reuse the visualize_pred function above, you need to return a "suppressed" version of confidence [5,5, num_of_classes].
     #you can also directly return the final bounding boxes and classes, and write a new visualization function for that.
+    pred_box = []
+    pred_confidence = []
     
-    
-    #TODO: non maximum suppression
-    final_bounding_box = []
-    classes = []
-    
-    for k in range(confidence_.shape[1]):   # for each classes
-        #box = box_[:,:]
-        #prob = confidence_[:,k]
-        #C = boxs_default[:,:]
-        B = []
-        
-        #max_prob = box_[max(confidence_[:,k])]
-        ##GET INDEX OF MAX_PROB
-        idx = np.where(confidence_[:,k] == max(confidence_[:,k]))
-        max_prob = box_[idx,:]
-        
-        if max(confidence_[:,k]) > threshold:
-            B.append(max_prob)
-            # remove max_prob from A
+    for k in range(confidence_.shape[1]): # for each classs
+        # calculate max confidence
+        if len(confidence_[:,k]) == 0:
+            break
+        else:
+            max_confidence = max(confidence_[:,k])
+        while max_confidence > threshold:
+            # get box with max confidence
+            idx = np.where(confidence_[:,k] == max_confidence)
+            box_max_conf = box_[idx,:]
+            confidence_max_conf = confidence_[idx,:]
+            
+            # remove max from box
             box_ = np.delete(box_, idx, axis=0)
             confidence_ = np.delete(confidence_, idx, axis=0)
             boxs_default = np.delete(boxs_default, idx, axis=0)
             
-        # for all boxes in A
-        x_min = box_[:,0] - box_[:,2]/2
-        y_min = box_[:,1] - box_[:,3]/2
-        x_max = box_[:,0] + box_[:,2]/2
-        y_max = box_[:,1] + box_[:,3]/2
+            # calculate ious for others
+            x_min = box_[:,0] - box_[:,2]/2
+            y_min = box_[:,1] - box_[:,3]/2
+            x_max = box_[:,0] + box_[:,2]/2
+            y_max = box_[:,1] + box_[:,3]/2
         
-        ious = iou(boxs_default[:,:],x_min,y_min,x_max,y_max)
+            ious = iou(boxs_default[:,:],x_min,y_min,x_max,y_max)
+            idx_ = np.where(ious > overlap)
+            
+            #remove box with large iou
+            box_ = np.delete(box_, idx_, axis=0)
+            confidence_ = np.delete(confidence_, idx_, axis=0)
+            boxs_default = np.delete(boxs_default, idx_, axis=0)
+            
+            # calculate new max
+            if len(confidence_[:,k])==0:
+                break
+            else:
+                max_confidence = max(confidence_[:,k])
+            
+            pred_confidence.append(confidence_max_conf)
+            pred_box.append(box_max_conf)
+    
+    pred_box = np.array(pred_box)
+    pred_confidence = np.array(pred_confidence)
+    
+    pred_box = pred_box.reshape((pred_box.shape[0], pred_box.shape[-1]))
+    pred_confidence = pred_confidence.reshape((pred_confidence.shape[0], pred_confidence.shape[-1]))
+            
+    return pred_confidence, pred_box
+
+    # #TODO: non maximum suppression
+    # final_bounding_box = []
+    # final_confidence = []
+    # classes = []
+    
+    # for k in range(confidence_.shape[1]):   # for each classes
+    #     #box = box_[:,:]
+    #     #prob = confidence_[:,k]
+    #     #C = boxs_default[:,:]
+    #     #B = []
+    #     #C = []
         
-        #ious_large = ious > overlap
-        idx_ = np.where(ious > overlap)
+    #     #max_prob = box_[max(confidence_[:,k])]
+    #     ##GET INDEX OF MAX_PROB
+    #     idx = np.where(confidence_[:,k] == max(confidence_[:,k]))
+    #     max_prob = box_[idx,:]
+    #     max_prob_confidence = confidence_[idx,:]
+    #     if max(confidence_[:,k]) > threshold:
+    #         #B.append(max_prob)
+    #         #C.append(max_prob_confidence)
+    #         # remove max_prob from A
+    #         box_ = np.delete(box_, idx, axis=0)
+    #         confidence_ = np.delete(confidence_, idx, axis=0)
+    #         boxs_default = np.delete(boxs_default, idx, axis=0)
+            
+    #         # for all boxes in A
+    #         x_min = box_[:,0] - box_[:,2]/2
+    #         y_min = box_[:,1] - box_[:,3]/2
+    #         x_max = box_[:,0] + box_[:,2]/2
+    #         y_max = box_[:,1] + box_[:,3]/2
         
-        # remove large from A
-        box_ = np.delete(box_, idx_, axis=0)
-        confidence_ = np.delete(confidence_, idx_, axis=0)
-        boxs_default = np.delete(boxs_default, idx_, axis=0)
+    #         ious = iou(boxs_default[:,:],x_min,y_min,x_max,y_max)
+        
+    #         #ious_large = ious > overlap
+    #         idx_ = np.where(ious > overlap)
+        
+    #         # remove large from A
+    #         box = np.delete(box_, idx_, axis=0)
+    #         confidence = np.delete(confidence_, idx_, axis=0)
+    #         boxs_default_ = np.delete(boxs_default, idx_, axis=0)
 
-        #B_all.append(B) # final boxes
-        final_bounding_box.append(B)
-        classes.append(k)
+    #         #B_all.append(B) # final boxes
+    #         max_prob = max_prob.reshape((1,4))
+    #         max_prob_confidence = max_prob_confidence.reshape((1,4))
+    #         final_bounding_box.append(max_prob)
+    #         final_confidence.append(max_prob_confidence)
+    #         classes.append(k)
+        
+    #     pred_box_ = np.array(final_bounding_box)
+    #     pred_confidence_ = np.array(final_confidence)
+        
+    #     pred_box_ = pred_box_.reshape((pred_box_.shape[0], pred_box_.shape[-1]))
+    #     pred_confidence_ = pred_confidence_.reshape((pred_confidence_.shape[0], pred_confidence_.shape[-1]))
     
+    # return pred_confidence_, pred_box_
+
+def save_ann_txt(ann_path, ann_name, confidence, box):
+    # class id when confidence max
+    class_id = 0
+    w = box[2]
+    h = box[3]
+    x = box[0] - w/2
+    y = box[1] - h/2                                                                                                                                                                                [0] 
+    line = [class_id, x, y, w, h]
     
-    final_bounding_box = []
-    classes = []
+    with open(ann_path + "%s.txt" %ann_name, "w") as text_file:
+        text_file.write(line)
     
-    return pred_confidence_, pred_box_
-
-
-
-
-
 
 
 

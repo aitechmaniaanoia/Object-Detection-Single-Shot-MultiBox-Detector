@@ -204,7 +204,10 @@ class COCO(torch.utils.data.Dataset):
 
 
     def __len__(self):
-        return len(self.img_names)*2
+        if self.train == True:
+            return len(self.img_names)*2
+        elif self.train == False:
+            return len(self.img_names)
 
     def __getitem__(self, index):
         img_length = len(self.img_names)

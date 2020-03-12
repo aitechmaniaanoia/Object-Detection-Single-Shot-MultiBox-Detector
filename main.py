@@ -29,7 +29,7 @@ args = parser.parse_args()
 
 class_num = 4 # cat dog person background
 
-num_epochs = 50 #100
+num_epochs = 100 #100
 batch_size = 16
 
 boxs_default = default_box_generator([10,5,3,1], [0.2,0.4,0.6,0.8], [0.1,0.3,0.5,0.7])
@@ -41,8 +41,8 @@ cudnn.benchmark = True
 
 #batch_size = int(batch_size/2)
 if not args.test:
-    dataset = COCO("data2/train/images/", "data2/train/annotations/", class_num, boxs_default, train = True, image_size=320)
-    dataset_test = COCO("data2/train/images/", "data2/train/annotations/", class_num, boxs_default, train = False, image_size=320)
+    dataset = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = True, image_size=320)
+    dataset_test = COCO("data/train/images/", "data/train/annotations/", class_num, boxs_default, train = False, image_size=320)
     
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=0)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=batch_size, shuffle=True, num_workers=0)
@@ -73,8 +73,6 @@ if not args.test:
             avg_loss += loss_net.data
             avg_count += 1
             
-            ############## test NMS ###############
-            #pred_confidence, pred_box = non_maximum_suppression(pred_confidence, pred_box, boxs_default)
             #visualize
             pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
             pred_box_ = pred_box[0].detach().cpu().numpy()
@@ -104,12 +102,20 @@ if not args.test:
             #optional: implement a function to accumulate precision and recall to compute mAP or F1.
             #update_precision_recall(pred_confidence_, pred_box_, ann_confidence_.numpy(), ann_box_.numpy(), boxs_default,precision_,recall_,thres)
         
-            #visualize
-            pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
-            pred_box_ = pred_box[0].detach().cpu().numpy()
-            visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+            # visualize
+            pred_confidence_1 = pred_confidence[0].detach().cpu().numpy()
+            pred_box_1 = pred_box[0].detach().cpu().numpy()
+            result_image = visualize_pred("test", pred_confidence_1, pred_box_1, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+            cv2.imwrite('visualized1/result_before_NMS_%d.jpg'%epoch, result_image)
         
-        #cv2.imwrite('visualized/result_%d.jpg'%epoch, result_image)
+            # after NMS visualize
+            # pred_confidence_2 = pred_confidence[0].detach().cpu().numpy()
+            # pred_box_2 = pred_box[0].detach().cpu().numpy()
+            # pred_confidence_2, pred_box_2 = non_maximum_suppression(pred_confidence_2, pred_box_2, boxs_default)
+            
+            # result_image2 = visualize_pred("test", pred_confidence_2, pred_box_2, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+            # cv2.imwrite('visualized2/result_after_NMS_%d.jpg'%epoch, result_image2)
+        
         #optional: compute F1
         #F1score = 2*precision*recall/np.maximum(precision+recall,1e-8)
         #print(F1score)
@@ -123,10 +129,11 @@ if not args.test:
 
 else:
     #TEST
-    dataset_test = COCO("data/test/images/", "data2/test/annotations/", class_num, boxs_default, train = False, image_size=320)
+    dataset_test = COCO("data/test/images/", "data/test/annotations/", class_num, boxs_default, train = False, image_size=320)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=0)
     network.load_state_dict(torch.load('network.pth'))
     network.eval()
+    img_names = os.listdir("data/test/images/")
     
     for i, data in enumerate(dataloader_test, 0):
         images_, ann_box_, ann_confidence_ = data
@@ -143,6 +150,10 @@ else:
         
         #TODO: save predicted bounding boxes and classes to a txt file.
         #you will need to submit those files for grading this assignment
+        ann_path = "data2/test/annotations/"
+        # get image name
+        ann_name = img_names[i][:-3]+"txt"
+        save_ann_txt(ann_path, ann_name, confidence, box)
         
         visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
         cv2.waitKey(1000)
