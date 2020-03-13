@@ -57,8 +57,11 @@ def default_box_generator(layers, large_scale, small_scale):
         for i in range(grid_size): 
             for j in range(grid_size):
                 
-                x_center = ((i+1)/2)/grid_size
-                y_center = ((j+1)/2)/grid_size
+                #x_center = ((i+1)/2)/grid_size # 1/(grid_size*2) + i 
+                #y_center = ((j+1)/2)/grid_size
+                
+                x_center = 1/(grid_size*2) + j/grid_size
+                y_center = 1/(grid_size*2) + i/grid_size
                 
                 x_min = x_center - box_width/2 # 4*1
                 x_max = x_center + box_width/2 # 4*1
@@ -70,8 +73,11 @@ def default_box_generator(layers, large_scale, small_scale):
                 x_min[x_min < 0] = 0
                 y_min[y_min < 0] = 0
                 
-                x_max[x_max > grid_size] = grid_size
-                y_max[y_max > grid_size] = grid_size
+                x_max[x_max > 1] = 1
+                y_max[y_max > 1] = 1
+                
+                box_width[box_width > 1] = 1
+                box_height[box_height > 1] = 1
                 
                 # create center matrix
                 x_c = np.zeros((4))
@@ -80,23 +86,23 @@ def default_box_generator(layers, large_scale, small_scale):
                 x_c[:] = x_center
                 y_c[:] = y_center
                 
-                # box[i*grid_size+j,:,0] = x_c
-                # box[i*grid_size+j,:,1] = y_c
-                # box[i*grid_size+j,:,2] = box_width
-                # box[i*grid_size+j,:,3] = box_height
-                # box[i*grid_size+j,:,4] = x_min
-                # box[i*grid_size+j,:,5] = y_min
-                # box[i*grid_size+j,:,6] = x_max
-                # box[i*grid_size+j,:,7] = y_max
+                box[i*grid_size+j,:,0] = x_c
+                box[i*grid_size+j,:,1] = y_c
+                box[i*grid_size+j,:,2] = box_width
+                box[i*grid_size+j,:,3] = box_height
+                box[i*grid_size+j,:,4] = x_min
+                box[i*grid_size+j,:,5] = y_min
+                box[i*grid_size+j,:,6] = x_max
+                box[i*grid_size+j,:,7] = y_max
                 
-                box[j*grid_size+i,:,0] = x_c
-                box[j*grid_size+i,:,1] = y_c
-                box[j*grid_size+i,:,2] = box_width
-                box[j*grid_size+i,:,3] = box_height
-                box[j*grid_size+i,:,4] = x_min
-                box[j*grid_size+i,:,5] = y_min
-                box[j*grid_size+i,:,6] = x_max
-                box[j*grid_size+i,:,7] = y_max
+                # box[j*grid_size+i,:,0] = x_c
+                # box[j*grid_size+i,:,1] = y_c
+                # box[j*grid_size+i,:,2] = box_width
+                # box[j*grid_size+i,:,3] = box_height
+                # box[j*grid_size+i,:,4] = x_min
+                # box[j*grid_size+i,:,5] = y_min
+                # box[j*grid_size+i,:,6] = x_max
+                # box[j*grid_size+i,:,7] = y_max
                 
         #boxes = np.concatenate((boxes, box, axis = 0))
         boxes.append(box)
@@ -169,11 +175,11 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
     relative_center_x = (gx - p[:,0])/p[:,2]
     relative_center_y = (gy - p[:,1])/p[:,3]
     
-    #relative_center_x[relative_center_x < 0] = 0
-    #relative_center_x[relative_center_x > 1] = 1
+    relative_center_x[relative_center_x < 0] = 0
+    relative_center_x[relative_center_x > 1] = 1
     
-    #relative_center_y[relative_center_y < 0] = 0
-    #relative_center_y[relative_center_y > 1] = 1
+    relative_center_y[relative_center_y < 0] = 0
+    relative_center_y[relative_center_y > 1] = 1
     
     relative_width = np.log(gw/p[:,2])
     relative_height = np.log(gh/p[:,3])
@@ -218,6 +224,7 @@ class COCO(torch.utils.data.Dataset):
             return len(self.img_names)*2
         elif self.train == False:
             return len(self.img_names)
+        
 
     def __getitem__(self, index):
         img_length = len(self.img_names)
@@ -230,10 +237,11 @@ class COCO(torch.utils.data.Dataset):
             #[0,0,1,0] -> person
             #[0,0,0,1] -> background
             
+
             ann_confidence[:,-1] = 1 #the default class for all cells is set to "background"
             
             img_name = self.imgdir+self.img_names[index]
-            ann_name = self.anndir+self.img_names[index][:-3]+"txt"
+            
             
             #TODO:
             #1. prepare the image [3,320,320], by reading image "img_name" first.
@@ -258,6 +266,11 @@ class COCO(torch.utils.data.Dataset):
             image = np.swapaxes(image,1,2) 
             image = np.swapaxes(image,0,1) # [3,320,320]
             
+            if self.anndir == None:
+                return image, ann_box, ann_confidence
+            
+            ann_name = self.anndir+self.img_names[index][:-3]+"txt"
+
             file_name = open(ann_name, "r")
             line = file_name.readlines()
             file_name.close()       
@@ -326,7 +339,7 @@ class COCO(torch.utils.data.Dataset):
             
             # resize
             image = cv2.resize(image, (self.image_size,self.image_size))
-            image = cv2.flip(image, -1)
+            image = cv2.flip(image, 1)
             
             image = np.swapaxes(image,1,2) 
             image = np.swapaxes(image,0,1) # [3,320,320]
@@ -336,7 +349,7 @@ class COCO(torch.utils.data.Dataset):
             #x_c = float(line[1]) + w/2
             #y_c = float(line[2]) + h/2
             x_c = height - x_c
-            y_c = width - y_c 
+            #y_c = width - y_c 
                  
             x_min = (x_c - w/2)/height
             y_min = (y_c - h/2)/width

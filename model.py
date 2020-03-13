@@ -14,8 +14,6 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 
 
-
-
 def SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box):
     #input:
     #pred_confidence -- the predicted class labels from SSD, [batch_size, num_of_boxes, num_of_classes]
@@ -109,8 +107,7 @@ class SSD(nn.Module):
                                       nn.Conv2d(512, 256, kernel_size=3, stride=2, padding=1),
                                       nn.BatchNorm2d(256), nn.ReLU()
                                       )
-        
-        
+          
         #self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1, bias=True)
         #self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=True) # 2 times
         #self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=True)
@@ -169,7 +166,6 @@ class SSD(nn.Module):
         self.right_3_confidence = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1, bias=True)
         
         #self.conv_256_16_3_1 = nn.Conv2d(256, 16, kernel_size=3, stride=1, padding=1, bias=True)
-        
         
     def forward(self, x):
         #input:
@@ -307,7 +303,7 @@ class SSD(nn.Module):
         confidence = torch.cat((x_r_confidence, x_r_1_confidence, x_r_2_confidence, x_l_final_confidence), axis = 2) 
         confidence = confidence.permute(0, 2, 1)
         confidence = confidence.reshape((batch_size, 540, 4))
-        confidence = F.softmax(confidence)
+        confidence = torch.softmax(confidence, dim = 2)
         
         return confidence,bboxes
 

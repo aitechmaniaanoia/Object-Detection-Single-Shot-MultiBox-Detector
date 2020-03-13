@@ -76,10 +76,10 @@ if not args.test:
             avg_count += 1
             
             #visualize
-        #pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
-        #pred_box_ = pred_box[0].detach().cpu().numpy()
-        #visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-            
+            #pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
+            #pred_box_ = pred_box[0].detach().cpu().numpy()
+            #visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+            #print(avg_loss/avg_count)
         print('[%d] time: %f train loss: %f' % (epoch, time.time()-start_time, avg_loss/avg_count))
 
 
@@ -108,16 +108,16 @@ if not args.test:
             pred_confidence_1 = pred_confidence[0].detach().cpu().numpy()
             pred_box_1 = pred_box[0].detach().cpu().numpy()
             result_image = visualize_pred("test", pred_confidence_1, pred_box_1, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-            if epoch >= 39:
+            if epoch >= 25:
                 cv2.imwrite('visualized1/result_before_NMS_%d.jpg'%epoch, result_image)
         
             # after NMS visualize
-            pred_confidence_2 = pred_confidence[0].detach().cpu().numpy()
-            pred_box_2 = pred_box[0].detach().cpu().numpy()
-            pred_confidence_2, pred_box_2 = non_maximum_suppression(pred_confidence_2, pred_box_2, boxs_default)
+            # pred_confidence_2 = pred_confidence[0].detach().cpu().numpy()
+            # pred_box_2 = pred_box[0].detach().cpu().numpy()
+            # pred_confidence_2, pred_box_2 = non_maximum_suppression(pred_confidence_2, pred_box_2, boxs_default)
             
-            result_image2 = visualize_pred("test", pred_confidence_2, pred_box_2, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-            cv2.imwrite('visualized2/result_after_NMS_%d.jpg'%epoch, result_image2)
+            # result_image2 = visualize_pred("test", pred_confidence_2, pred_box_2, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+            # cv2.imwrite('visualized2/result_after_NMS_%d.jpg'%epoch, result_image2)
         
         #optional: compute F1
         #F1score = 2*precision*recall/np.maximum(precision+recall,1e-8)
@@ -126,20 +126,19 @@ if not args.test:
         #num = num + 1
         
         #save weights
-        if epoch >= 39 and epoch%10==9:
+        if epoch%10==9:
             #save last network
             print('saving net...')
             torch.save(network.state_dict(), 'network_%d.pth'%epoch)
             #num = num + 1
 
-
 else:
     #TEST
-    dataset_test = COCO("data/test/images/", "data/test/annotations/", class_num, boxs_default, train = False, image_size=320)
+    dataset_test = COCO("data2/test/images/", "data2/test/annotations/", class_num, boxs_default, train = False, image_size=320)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=0)
     network.load_state_dict(torch.load('network.pth'))
     network.eval()
-    img_names = os.listdir("data/test/images/")
+    img_names = os.listdir("data2/test/images/")
     
     for i, data in enumerate(dataloader_test, 0):
         images_, ann_box_, ann_confidence_ = data
@@ -156,10 +155,10 @@ else:
         
         #TODO: save predicted bounding boxes and classes to a txt file.
         #you will need to submit those files for grading this assignment
-        ann_path = "data/test/annotations/"
+        ann_path = "data2/test/annotations/"
         # get image name
         ann_name = img_names[i][:-3]+"txt"
-        save_ann_txt(ann_path, ann_name, confidence, box)
+        save_ann_txt(ann_path, ann_name, pred_confidence_, pred_box_)
         
         visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
         cv2.waitKey(1000)
