@@ -107,17 +107,20 @@ if not args.test:
             # visualize
             pred_confidence_1 = pred_confidence[0].detach().cpu().numpy()
             pred_box_1 = pred_box[0].detach().cpu().numpy()
+            
             result_image = visualize_pred("test", pred_confidence_1, pred_box_1, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
             if epoch >= 25:
                 cv2.imwrite('visualized1/result_before_NMS_%d.jpg'%epoch, result_image)
         
             # after NMS visualize
-            # pred_confidence_2 = pred_confidence[0].detach().cpu().numpy()
-            # pred_box_2 = pred_box[0].detach().cpu().numpy()
-            # pred_confidence_2, pred_box_2 = non_maximum_suppression(pred_confidence_2, pred_box_2, boxs_default)
+            pred_confidence_2,pred_box_2, index = non_maximum_suppression(pred_confidence_,pred_box_,boxs_default)
+            ann_confidence = ann_confidence_[0].numpy()
+            ann_box = ann_box_[0].numpy()
             
-            # result_image2 = visualize_pred("test", pred_confidence_2, pred_box_2, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-            # cv2.imwrite('visualized2/result_after_NMS_%d.jpg'%epoch, result_image2)
+            result_image = visualize_pred_NMS("test", pred_confidence_2, pred_box_2, 
+                                          ann_confidence, ann_box, images_[0].numpy(), 
+                                          boxs_default, index)
+            cv2.imwrite('visualized2/result_after_NMS_%d.jpg'%epoch, result_image2)
         
         #optional: compute F1
         #F1score = 2*precision*recall/np.maximum(precision+recall,1e-8)
@@ -150,16 +153,23 @@ else:
 
         pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
         pred_box_ = pred_box[0].detach().cpu().numpy()
-        
-        pred_confidence_,pred_box_ = non_maximum_suppression(pred_confidence_,pred_box_,boxs_default)
+
+        pred_confidence_,pred_box_, index = non_maximum_suppression(pred_confidence_,pred_box_,boxs_default)
+
+        ann_confidence = ann_confidence_[0].numpy()
+        ann_box = ann_box_[0].numpy()
+    
+        result_image = visualize_pred_NMS("test", pred_confidence_, pred_box_, 
+                                          ann_confidence, ann_box, images_[0].numpy(), 
+                                          boxs_default, index)
         
         #TODO: save predicted bounding boxes and classes to a txt file.
         #you will need to submit those files for grading this assignment
-        ann_path = "data2/test/annotations/"
+        ann_path = "predicted_boxes/"
         # get image name
-        ann_name = img_names[i][:-3]+"txt"
-        save_ann_txt(ann_path, ann_name, pred_confidence_, pred_box_)
-        
+        ann_name = img_names[i][:-4]
+        save_ann_txt(ann_path, ann_name, pred_confidence_, pred_box_, boxs_default,index)
+            
         visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
         cv2.waitKey(1000)
 

@@ -42,7 +42,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     #draw ground truth
     for i in range(len(ann_confidence)):
         for j in range(class_num):
-            if ann_confidence[i,j]>0.9: #if the network/ground_truth has high confidence on cell[i] with class[j]
+            if ann_confidence[i,j]>0.5: #if the network/ground_truth has high confidence on cell[i] with class[j]
                 #TODO:
                 #image1: draw ground truth bounding boxes on image1
                 #image2: draw ground truth "default" boxes on image2 (to show that you have assigned the object to the correct cell/cells)
@@ -75,7 +75,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
     #pred
     for i in range(len(pred_confidence)):
         for j in range(class_num):
-            if pred_confidence[i,j]>0.9:
+            if pred_confidence[i,j]>0.5:
                 #TODO:
                 #image3: draw network-predicted bounding boxes on image3
                 #image4: draw network-predicted "default" boxes on image4 (to show which cell does your network think that contains an object)
@@ -123,7 +123,7 @@ def visualize_pred(windowname, pred_confidence, pred_box, ann_confidence, ann_bo
 
 
 
-def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.1, threshold=0.9):
+def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.3, threshold=0.5):
     #input:
     #confidence_  -- the predicted class labels from SSD, [num_of_boxes, num_of_classes]
     #box_         -- the predicted bounding boxes from SSD, [num_of_boxes, 4]
@@ -139,6 +139,11 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.1, thresh
     pred_box = []
     pred_confidence = []
     
+    gx = boxs_default[:,2]*box_[:,0] + boxs_default[:,0] # p default   d pred_box
+    gy = boxs_default[:,3]*box_[:,1] + boxs_default[:,1]
+    gw = boxs_default[:,2]*np.exp(box_[:,2])
+    gh = boxs_default[:,3]*np.exp(box_[:,3])
+    
     for k in range(confidence_.shape[1]-1): # for each classs except background
         # calculate max confidence
         if len(confidence_[:,k]) > 0:
@@ -147,28 +152,48 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.1, thresh
             while max_confidence > threshold:
                 # get box with max confidence
                 idx = np.where(confidence_[:,k] == max_confidence)
+                idx = int(idx[0])
                 index.append(idx)
-                box_max_conf = box_[idx,:]
-                confidence_max_conf = confidence_[idx,:]
+                box_max_conf = box_[idx,:].copy()
+                confidence_max_conf = confidence_[idx,:].copy()
                 
                 # remove max from box
-                box_ = np.delete(box_, idx, axis=0)
-                confidence_ = np.delete(confidence_, idx, axis=0)
-                boxs_default = np.delete(boxs_default, idx, axis=0)
-                
+                #box_ = np.delete(box_, idx, axis=0)
+                #confidence_ = np.delete(confidence_, idx, axis=0)
+                #boxs_default = np.delete(boxs_default, idx, axis=0)
+                #box_[idx,:] = 0
+                #confidence_[idx,:] = 0
+
                 # calculate ious for others
-                x_min = box_[:,0] - box_[:,2]/2
-                y_min = box_[:,1] - box_[:,3]/2
-                x_max = box_[:,0] + box_[:,2]/2
-                y_max = box_[:,1] + box_[:,3]/2
-            
-                ious = iou(boxs_default[:,:],x_min,y_min,x_max,y_max)
-                idx_ = np.where(ious > overlap)
+                x_min = gx - gw/2
+                y_min = gy - gh/2
+                x_max = gx + gw/2
+                y_max = gy + gh/2
                 
+                # highest confidence
+                #x1_min = float(gx[idx] - gw[idx,2]/2)
+                #y1_min = float(box_[idx,1] - box_[idx,3]/2)
+                #x1_max = float(box_[idx,0] + box_[idx,2]/2)
+                #y1_max = float(box_[idx,1] + box_[idx,3]/2)
+            
+                #ious = iou(boxs_default[:,:],x_min,y_min,x_max,y_max)
+                #ious = iou(box_[:,:],x_min,y_min,x_max,y_max)
+                
+                inter = np.maximum(np.minimum(x_max[idx],x_max)-np.maximum(x_min[idx],x_min),0)*np.maximum(np.minimum(y_max[idx],y_max)-np.maximum(y_min[idx],y_min),0)
+                area_a = (x_max[idx]-x_min[idx])*(y_max[idx]-y_min[idx])
+                area_b = (x_max-x_min)*(y_max-y_min)
+                union = area_a + area_b - inter
+                ious = inter/np.maximum(union,1e-8)
+
+                idx_ = np.where(ious > overlap)
+                idx_ = idx_[0]
                 #remove box with large iou
-                box_ = np.delete(box_, idx_, axis=0)
-                confidence_ = np.delete(confidence_, idx_, axis=0)
-                boxs_default = np.delete(boxs_default, idx_, axis=0)
+                #box_ = np.delete(box_, idx_, axis=0)
+                #confidence_ = np.delete(confidence_, idx_, axis=0)
+                #boxs_default = np.delete(boxs_default, idx_, axis=0)
+                box_[idx_,:] = 0
+                confidence_[idx_,:] = 0
+            
                 
                 confidence_max_conf = confidence_max_conf.reshape((1,4))
                 box_max_conf = box_max_conf.reshape((1,4))
@@ -176,11 +201,7 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.1, thresh
                 pred_confidence.append(confidence_max_conf)
                 pred_box.append(box_max_conf)
                 
-                # calculate new max
-                if len(confidence_[:,k])==0:
-                    break
-                else:
-                    max_confidence = max(confidence_[:,k])
+                max_confidence = max(confidence_[:,k])
                 
     pred_box = np.array(pred_box)
     pred_confidence = np.array(pred_confidence)
@@ -258,8 +279,12 @@ def visualize_pred_NMS(windowname, pred_confidence, pred_box, ann_confidence, an
     #pred
     for i in range(len(pred_confidence)):
         classes = np.where(pred_confidence[i,:] == max(pred_confidence[i,:]))
+        classes = int(classes[0])
+        #print(classes)
         
-        idx = index[i]
+        idx = index[i]  # index in default box
+        #idx = int(idx[0])
+        
         gx = boxs_default[idx,2]*pred_box[i,0] + boxs_default[idx,0] # p default   d ann_box
         gy = boxs_default[idx,3]*pred_box[i,1] + boxs_default[idx,1]
         gw = boxs_default[idx,2]*math.exp(pred_box[i,2])
@@ -272,7 +297,7 @@ def visualize_pred_NMS(windowname, pred_confidence, pred_box, ann_confidence, an
         
         start_point = (x1, y1) #top left corner, x1<x2, y1<y2
         end_point = (x2, y2) #bottom right corner
-        color = colors[int(classes[0])] #use red green blue to represent different classes
+        color = colors[classes] #use red green blue to represent different classes
         thickness = 2
         
         image3 = cv2.rectangle(image3, start_point, end_point, color, thickness)
@@ -292,24 +317,31 @@ def visualize_pred_NMS(windowname, pred_confidence, pred_box, ann_confidence, an
     image[h:,w:] = image4
     cv2.imshow(windowname+" [[gt_box,gt_dft],[pd_box,pd_dft]]",image)
     cv2.waitKey(1)
+    #print("image_%d"%i)
     
     if windowname == 'test':
         # save image
         return image
 
-def save_ann_txt(ann_path, ann_name, confidence, box):
+def save_ann_txt(ann_path, ann_name, confidence, box, boxs_default, idx):
+    gx = boxs_default[idx,2]*box[:,0] + boxs_default[idx,0] # p default   d pred_box
+    gy = boxs_default[idx,3]*box[:,1] + boxs_default[idx,1]
+    gw = boxs_default[idx,2]*np.exp(box[:,2])
+    gh = boxs_default[idx,3]*np.exp(box[:,3])
+    
     with open(ann_path + "%s.txt" %ann_name, "w") as text_file:
         for i in range(box.shape[0]):
             class_id = np.where(confidence[i,:] == max(confidence[i,:]))
             class_id = int(class_id[0])
-            w = box[i,2]
-            h = box[i,3]
-            x = box[i,0] - w/2
-            y = box[i,1] - h/2                                                                                                                                                                           [0] 
-            line = [class_id, x, y, w, h]
+            #w = gw[i]
+            #h = gh[i]
+            #x = gx[i] - gw[i]/2
+            #y = gy[i] - gh[i]/2                                                                                                                                                                         [0] 
+            #line = [class_id, x, y, w, h]
+            line = [class_id, gx[i] - gw[i]/2, gy[i] - gh[i]/2, gw[i], gh[i]]
             
-            text_file.writelines(["%s," % item  for item in line])
-            #text_file.write(line)
+            text_file.writelines(["%s," % item  for item in line[0:-1]])
+            text_file.write("%s" % line[-1])
             text_file.write('\n')
     
 
