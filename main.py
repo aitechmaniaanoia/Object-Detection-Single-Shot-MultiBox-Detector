@@ -137,11 +137,11 @@ if not args.test:
 
 else:
     #TEST
-    dataset_test = COCO("data2/test/images/", "data2/test/annotations/", class_num, boxs_default, train = False, image_size=320)
+    dataset_test = COCO("data/test/images/", "data/test/annotations/", class_num, boxs_default, train = False, image_size=320)
     dataloader_test = torch.utils.data.DataLoader(dataset_test, batch_size=1, shuffle=False, num_workers=0)
     network.load_state_dict(torch.load('network.pth'))
     network.eval()
-    img_names = os.listdir("data2/test/images/")
+    img_names = os.listdir("data/test/images/")
     
     for i, data in enumerate(dataloader_test, 0):
         images_, ann_box_, ann_confidence_ = data
@@ -166,10 +166,12 @@ else:
         #TODO: save predicted bounding boxes and classes to a txt file.
         #you will need to submit those files for grading this assignment
         ann_path = "predicted_boxes/"
+        img_path = "data/test/images/"
         # get image name
         ann_name = img_names[i][:-4]
-        save_ann_txt(ann_path, ann_name, pred_confidence_, pred_box_, boxs_default,index)
-            
+        img_name = img_names[i]
+        save_ann_txt(ann_path, ann_name, img_path, img_name, pred_confidence_, pred_box_, boxs_default,index)
+        
         visualize_pred("test", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
         cv2.waitKey(1000)
 

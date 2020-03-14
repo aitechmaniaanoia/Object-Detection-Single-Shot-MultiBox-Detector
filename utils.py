@@ -323,26 +323,34 @@ def visualize_pred_NMS(windowname, pred_confidence, pred_box, ann_confidence, an
         # save image
         return image
 
-def save_ann_txt(ann_path, ann_name, confidence, box, boxs_default, idx):
-    gx = boxs_default[idx,2]*box[:,0] + boxs_default[idx,0] # p default   d pred_box
-    gy = boxs_default[idx,3]*box[:,1] + boxs_default[idx,1]
-    gw = boxs_default[idx,2]*np.exp(box[:,2])
-    gh = boxs_default[idx,3]*np.exp(box[:,3])
+def save_ann_txt(ann_path, ann_name, img_path, img_name,confidence, box, boxs_default, idx):
+    if box.shape[0] > 0:       
+        gx = boxs_default[idx,2]*box[:,0] + boxs_default[idx,0] # p default   d pred_box
+        gy = boxs_default[idx,3]*box[:,1] + boxs_default[idx,1]
+        gw = boxs_default[idx,2]*np.exp(box[:,2])
+        gh = boxs_default[idx,3]*np.exp(box[:,3])
+        
+    img = cv2.imread(img_path + img_name)
+    height = img.shape[0]
+    width = img.shape[1]
     
     with open(ann_path + "%s.txt" %ann_name, "w") as text_file:
-        for i in range(box.shape[0]):
-            class_id = np.where(confidence[i,:] == max(confidence[i,:]))
-            class_id = int(class_id[0])
-            #w = gw[i]
-            #h = gh[i]
-            #x = gx[i] - gw[i]/2
-            #y = gy[i] - gh[i]/2                                                                                                                                                                         [0] 
-            #line = [class_id, x, y, w, h]
-            line = [class_id, gx[i] - gw[i]/2, gy[i] - gh[i]/2, gw[i], gh[i]]
-            
-            text_file.writelines(["%s," % item  for item in line[0:-1]])
-            text_file.write("%s" % line[-1])
+        if box.shape[0] == 0:
             text_file.write('\n')
+        else:
+            for i in range(box.shape[0]):
+                class_id = np.where(confidence[i,:] == max(confidence[i,:]))
+                class_id = int(class_id[0])
+                #w = gw[i]
+                #h = gh[i]
+                #x = gx[i] - gw[i]/2
+                #y = gy[i] - gh[i]/2                                                                                                                                                                         [0] 
+                #line = [class_id, x, y, w, h]
+                line = [class_id, (gx[i] - gw[i]/2)*width, (gy[i] - gh[i]/2)*height, gw[i]*width, gh[i]*height]
+                
+                text_file.writelines(["%s," % item  for item in line[0:-1]])
+                text_file.write("%s" % line[-1])
+                text_file.write('\n')
     
 
 
