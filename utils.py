@@ -156,28 +156,12 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.3, thresh
                 index.append(idx)
                 box_max_conf = box_[idx,:].copy()
                 confidence_max_conf = confidence_[idx,:].copy()
-                
-                # remove max from box
-                #box_ = np.delete(box_, idx, axis=0)
-                #confidence_ = np.delete(confidence_, idx, axis=0)
-                #boxs_default = np.delete(boxs_default, idx, axis=0)
-                #box_[idx,:] = 0
-                #confidence_[idx,:] = 0
 
                 # calculate ious for others
                 x_min = gx - gw/2
                 y_min = gy - gh/2
                 x_max = gx + gw/2
                 y_max = gy + gh/2
-                
-                # highest confidence
-                #x1_min = float(gx[idx] - gw[idx,2]/2)
-                #y1_min = float(box_[idx,1] - box_[idx,3]/2)
-                #x1_max = float(box_[idx,0] + box_[idx,2]/2)
-                #y1_max = float(box_[idx,1] + box_[idx,3]/2)
-            
-                #ious = iou(boxs_default[:,:],x_min,y_min,x_max,y_max)
-                #ious = iou(box_[:,:],x_min,y_min,x_max,y_max)
                 
                 inter = np.maximum(np.minimum(x_max[idx],x_max)-np.maximum(x_min[idx],x_min),0)*np.maximum(np.minimum(y_max[idx],y_max)-np.maximum(y_min[idx],y_min),0)
                 area_a = (x_max[idx]-x_min[idx])*(y_max[idx]-y_min[idx])
@@ -187,10 +171,7 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.3, thresh
 
                 idx_ = np.where(ious > overlap)
                 idx_ = idx_[0]
-                #remove box with large iou
-                #box_ = np.delete(box_, idx_, axis=0)
-                #confidence_ = np.delete(confidence_, idx_, axis=0)
-                #boxs_default = np.delete(boxs_default, idx_, axis=0)
+
                 box_[idx_,:] = 0
                 confidence_[idx_,:] = 0
             
@@ -341,11 +322,7 @@ def save_ann_txt(ann_path, ann_name, img_path, img_name,confidence, box, boxs_de
             for i in range(box.shape[0]):
                 class_id = np.where(confidence[i,:] == max(confidence[i,:]))
                 class_id = int(class_id[0])
-                #w = gw[i]
-                #h = gh[i]
-                #x = gx[i] - gw[i]/2
-                #y = gy[i] - gh[i]/2                                                                                                                                                                         [0] 
-                #line = [class_id, x, y, w, h]
+
                 line = [class_id, (gx[i] - gw[i]/2)*width, (gy[i] - gh[i]/2)*height, gw[i]*width, gh[i]*height]
                 
                 text_file.writelines(["%s," % item  for item in line[0:-1]])

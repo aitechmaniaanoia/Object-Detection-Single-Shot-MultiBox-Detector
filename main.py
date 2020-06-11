@@ -82,8 +82,6 @@ if not args.test:
             #print(avg_loss/avg_count)
         print('[%d] time: %f train loss: %f' % (epoch, time.time()-start_time, avg_loss/avg_count))
 
-
-        
         #TEST
         network.eval()
         
