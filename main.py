@@ -29,7 +29,7 @@ args = parser.parse_args()
 
 class_num = 4 # cat dog person background
 
-num_epochs = 100 #100
+num_epochs = 50 #100
 batch_size = 16
 
 boxs_default = default_box_generator([10,5,3,1], [0.2,0.4,0.6,0.8], [0.1,0.3,0.5,0.7])
@@ -50,8 +50,6 @@ if not args.test:
     optimizer = optim.Adam(network.parameters(), lr = 1e-4)
     #feel free to try other optimizers and parameters.
     
-    #num = 0
-    
     start_time = time.time()
 
     for epoch in range(num_epochs):
@@ -67,7 +65,9 @@ if not args.test:
             ann_confidence = ann_confidence_.cuda()
 
             optimizer.zero_grad()
+            
             pred_confidence, pred_box = network(images)
+            
             loss_net = SSD_loss(pred_confidence, pred_box, ann_confidence, ann_box)
             loss_net.backward()
             optimizer.step()
@@ -76,10 +76,10 @@ if not args.test:
             avg_count += 1
             
             #visualize
-            #pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
-            #pred_box_ = pred_box[0].detach().cpu().numpy()
-            #visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
-            #print(avg_loss/avg_count)
+            pred_confidence_ = pred_confidence[0].detach().cpu().numpy()
+            pred_box_ = pred_box[0].detach().cpu().numpy()
+            visualize_pred("train", pred_confidence_, pred_box_, ann_confidence_[0].numpy(), ann_box_[0].numpy(), images_[0].numpy(), boxs_default)
+            print(avg_loss/avg_count)
         print('[%d] time: %f train loss: %f' % (epoch, time.time()-start_time, avg_loss/avg_count))
 
         #TEST
@@ -96,9 +96,6 @@ if not args.test:
 
             pred_confidence, pred_box = network(images)
             
-            pred_confidence_ = pred_confidence.detach().cpu().numpy()
-            pred_box_ = pred_box.detach().cpu().numpy()
-            
             #optional: implement a function to accumulate precision and recall to compute mAP or F1.
             #update_precision_recall(pred_confidence_, pred_box_, ann_confidence_.numpy(), ann_box_.numpy(), boxs_default,precision_,recall_,thres)
         
@@ -111,14 +108,15 @@ if not args.test:
                 cv2.imwrite('visualized1/result_before_NMS_%d.jpg'%epoch, result_image)
         
             # after NMS visualize
-            pred_confidence_2,pred_box_2, index = non_maximum_suppression(pred_confidence_,pred_box_,boxs_default)
+            pred_confidence_2,pred_box_2, index = non_maximum_suppression(pred_confidence_1,pred_box_1,boxs_default)
             ann_confidence = ann_confidence_[0].numpy()
             ann_box = ann_box_[0].numpy()
             
             result_image = visualize_pred_NMS("test", pred_confidence_2, pred_box_2, 
                                           ann_confidence, ann_box, images_[0].numpy(), 
                                           boxs_default, index)
-            cv2.imwrite('visualized2/result_after_NMS_%d.jpg'%epoch, result_image2)
+            
+            cv2.imwrite('visualized2/result_after_NMS_%d.jpg'%epoch, result_image)
         
         #optional: compute F1
         #F1score = 2*precision*recall/np.maximum(precision+recall,1e-8)

@@ -135,6 +135,7 @@ def non_maximum_suppression(confidence_, box_, boxs_default, overlap=0.3, thresh
     #depends on your implementation.
     #if you wish to reuse the visualize_pred function above, you need to return a "suppressed" version of confidence [5,5, num_of_classes].
     #you can also directly return the final bounding boxes and classes, and write a new visualization function for that.
+    
     index = []
     pred_box = []
     pred_confidence = []
