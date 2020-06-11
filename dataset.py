@@ -95,15 +95,6 @@ def default_box_generator(layers, large_scale, small_scale):
                 box[i*grid_size+j,:,6] = x_max
                 box[i*grid_size+j,:,7] = y_max
                 
-                # box[j*grid_size+i,:,0] = x_c
-                # box[j*grid_size+i,:,1] = y_c
-                # box[j*grid_size+i,:,2] = box_width
-                # box[j*grid_size+i,:,3] = box_height
-                # box[j*grid_size+i,:,4] = x_min
-                # box[j*grid_size+i,:,5] = y_min
-                # box[j*grid_size+i,:,6] = x_max
-                # box[j*grid_size+i,:,7] = y_max
-                
         #boxes = np.concatenate((boxes, box, axis = 0))
         boxes.append(box)
 
@@ -161,11 +152,6 @@ def match(ann_box,ann_confidence,boxs_default,threshold,cat_id,x_min,y_min,x_max
         ious_true = np.argmax(ious)
         p = boxs_default[ious_true]
         p = p.reshape((1,8))
-    
-    # relative_center_x = (g[:,0] - x_min)/x_max
-    # relative_center_y = (g[:,1] - y_min)/y_max
-    # relative_width = np.log(g[:,2]/x_max)
-    # relative_height = np.log(g[:,3]/y_max)
         
     gx = x_min + (x_max - x_min)/2
     gy = y_min + (y_max - y_min)/2
@@ -229,7 +215,7 @@ class COCO(torch.utils.data.Dataset):
     def __getitem__(self, index):
         img_length = len(self.img_names)
         if index < img_length:
-            ann_box = np.zeros([self.box_num,4], np.float32) #bounding boxes
+            ann_box = np.zeros([self.box_num,self.class_num], np.float32) #bounding boxes
             ann_confidence = np.zeros([self.box_num,self.class_num], np.float32) #one-hot vectors
             #one-hot vectors with four classesimage1
             #[1,0,0,0] -> cat
@@ -298,7 +284,7 @@ class COCO(torch.utils.data.Dataset):
         else: #data augmentation
             index = index-img_length
             
-            ann_box = np.zeros([self.box_num,4], np.float32) #bounding boxes
+            ann_box = np.zeros([self.box_num,self.class_num], np.float32) #bounding boxes
             ann_confidence = np.zeros([self.box_num,self.class_num], np.float32) #one-hot vectors
             
             ann_confidence[:,-1] = 1 #the default class for all cells is set to "background"
@@ -326,8 +312,6 @@ class COCO(torch.utils.data.Dataset):
             
             x_min = x_c - w/2
             y_min = y_c - h/2
-            #x_max = (x_c + w/2)/height
-            #y_max = (y_c + w/2)/width
             
             crop_x = random.randint(0, int(x_min))
             crop_y = random.randint(0, int(y_min))
@@ -344,13 +328,8 @@ class COCO(torch.utils.data.Dataset):
             image = np.swapaxes(image,1,2) 
             image = np.swapaxes(image,0,1) # [3,320,320]
 
-            #w = float(line[3])
-            #h = float(line[4])
-            #x_c = float(line[1]) + w/2
-            #y_c = float(line[2]) + h/2
             x_c = height - x_c
-            #y_c = width - y_c 
-                 
+            
             x_min = (x_c - w/2)/height
             y_min = (y_c - h/2)/width
             x_max = (x_c + w/2)/height
