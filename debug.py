@@ -20,7 +20,7 @@ from utils import *
 
 class_num = 4 # cat dog person background
 
-#num_epochs = 100 #100
+num_epochs = 100 #100
 batch_size = 16
 
 boxs_default = default_box_generator([10,5,3,1], [0.2,0.4,0.6,0.8], [0.1,0.3,0.5,0.7])
