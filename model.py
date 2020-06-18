@@ -180,27 +180,24 @@ class SSD(nn.Module):
         # right 
         x_r_box = self.right_1_box(x)
         x_r_confidence = self.right_1_confidence(x)
-        #x_r_box = self.conv_256_16_3_1(x)  #[N,16,10,10]
-        x_r_box = x_r_box.reshape((batch_size, 16, 100)) #[N.16.100]        
-        #x_r_confidence = self.conv_256_16_3_1(x)  #[N,16,10,10]
-        x_r_confidence = x_r_confidence.reshape((batch_size, 16, 100)) #[N.16.100]
+
+        x_r_box = x_r_box.reshape((batch_size, 16, 100)) #[N,16,100]        
+
+        x_r_confidence = x_r_confidence.reshape((batch_size, 16, 100)) #[N,16,100]
         
         x_r_1_box = self.right_2_box(x_l_1)
-        #x_r_1_box = self.conv_256_16_3_1(x_l_box)
+
         x_r_1_box = x_r_1_box.reshape((batch_size, 16, 25)) #[N.16.25]
         x_r_1_confidence = self.right_2_confidence(x_l_1)
-        #x_r_1_confidence = self.conv_256_16_3_1(x_l_confidence)
         x_r_1_confidence = x_r_1_confidence.reshape((batch_size, 16, 25)) #[N.16.25]
         
         x_r_2_box = self.right_3_box(x_l_2)
-        #x_r_2_box = self.conv_256_16_3_1(x_l_1_box)
+
         x_r_2_box = x_r_2_box.reshape((batch_size, 16, 9))
         x_r_2_confidence = self.right_3_confidence(x_l_2)
-        #x_r_2_confidence = self.conv_256_16_3_1(x_l_1_confidence)
         x_r_2_confidence = x_r_2_confidence.reshape((batch_size, 16, 9))
         
         # concatenate
-        #bboxes = np.concatenate((x_l_final, x_r, x_r_1, x_r_2), axis = 2)
         bboxes = torch.cat((x_r_box, x_r_1_box, x_r_2_box, x_l_final_box,), axis = 2) 
         bboxes = bboxes.permute(0, 2, 1)
         bboxes = bboxes.reshape((batch_size, 540, 4))
